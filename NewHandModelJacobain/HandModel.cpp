@@ -548,10 +548,22 @@ void HandModel::Updata_Joints_Axis()
 
 		if (i == 0)
 		{
-			//这里单独拿出来的原因是，wrist控制的旋转轴，是对世界坐标系而言的，因此规定的xyz轴，的坐标都是世界坐标系下的坐标；
-			Joints[i].CorrespondingAxis[0] << Joints[i].global*hand_scale*Joints[i].local.inverse()*Joints[i].dof_axis[0] + GlobalPosition - handbone_position;
-			Joints[i].CorrespondingAxis[1] << Joints[i].global*hand_scale*Joints[i].local.inverse()*Joints[i].dof_axis[1] + GlobalPosition - handbone_position;
-			Joints[i].CorrespondingAxis[2] << Joints[i].global*hand_scale*Joints[i].local.inverse()*Joints[i].dof_axis[2] + GlobalPosition - handbone_position;
+
+			Eigen::MatrixXf x = Eigen::MatrixXf::Identity(4, 4);
+
+
+			float cx = cos(Params[15] / 180 * PI);
+			float sx = sin(Params[15] / 180 * PI);
+
+
+			x(1, 1) = cx; x(2, 2) = cx;
+			x(1, 2) = -sx; x(2, 1) = sx;
+
+
+			//这里单独拿出来
+			Joints[i].CorrespondingAxis[0] << Joints[i].dof_axis[0] + GlobalPosition - handbone_position;
+			Joints[i].CorrespondingAxis[1] << x*Joints[i].dof_axis[1] + GlobalPosition - handbone_position;
+			Joints[i].CorrespondingAxis[2] << Joints[0].rotation*Joints[i].dof_axis[2] + GlobalPosition - handbone_position;
 		}
 		else
 		{
@@ -1069,6 +1081,7 @@ void HandModel::Updata_Jacobian_correspond(std::vector<int> & cor)
 						Eigen::Vector3f result;
 						int params_idx = Joints[current_joint_idx].params_index[idx];
 
+
 						switch (Joints[current_joint_idx].params_type[idx])
 						{
 						case dof_type(x_axis_rotate): {
@@ -1115,6 +1128,7 @@ void HandModel::Updata_Jacobian_correspond(std::vector<int> & cor)
 						}
 						}
 
+
 					}
 					current_joint_idx = Joints[current_joint_idx].parent_joint_index;
 				}
@@ -1146,26 +1160,61 @@ void HandModel::MoveToDownSamoleCorrespondingVertices(pcl::PointCloud<pcl::Point
 	int omiga_limit = 50;
 
 	Eigen::Matrix<float, 27, 27> D = Eigen::Matrix<float, 27, 27>::Identity(27, 27);
-	int omiga = 20;
+	int rotate_omiga = 20;
+	int abound_omiga = 100;
+
+	D(0, 0) = rotate_omiga;
+	D(1, 1) = abound_omiga;
+	D(2, 2) = rotate_omiga;
+
+	D(3, 3) = rotate_omiga;
+	D(4, 4) = abound_omiga;
+	D(5, 5) = rotate_omiga;
+
+	D(6, 6) = rotate_omiga;
+	D(7, 7) = abound_omiga;
+	D(8, 8) = rotate_omiga;
+
+	D(9, 9) = rotate_omiga;
+	D(10, 10) = abound_omiga;
+	D(11, 11) = rotate_omiga;
+
+	D(12, 12) = rotate_omiga;
+	D(13, 13) = rotate_omiga;
+	D(14, 14) = rotate_omiga;
+
+	D(15, 15) = rotate_omiga;
+	D(16, 16) = rotate_omiga;
+	D(17, 17) = rotate_omiga;
+
+	D(18, 18) = rotate_omiga;
+	D(19, 19) = rotate_omiga;
+	D(20, 20) = rotate_omiga;
+	D(21, 21) = rotate_omiga;
+	D(22, 22) = rotate_omiga;
+	D(23, 23) = rotate_omiga;
+	D(24, 24) = 0.01;
+	D(25, 25) = 0.01;
+	D(26, 26) = 0.01;
 
 	Eigen::VectorXf dAngles = Eigen::VectorXf::Zero(NumberofParams, 1);
 
-	MatrixXf JtJ = Jt*J + omiga*D + omiga_limit*J_limit.transpose()*J_limit;
+	MatrixXf JtJ = Jt*J + D + omiga_limit*J_limit.transpose()*J_limit;
 	VectorXf JTe = Jt*e + omiga_limit*e_limit;
 
 	dAngles = JtJ.colPivHouseholderQr().solve(JTe);
 
 	for (int i = 0; i < NumberofParams; i++)
 	{
-		if (i != 15 && i != 16)
-		{
-			Params[i] += dAngles(i);
-		}
-		else
-		{
-			Params[i] -= dAngles(i);
-		}
-
+		//if (i != 15 && i != 16)
+		//{
+		//	Params[i] += dAngles(i);
+		//}
+		//else
+		//{
+		//	Params[i] -= dAngles(i);
+		//}
+		Params[i] += dAngles(i);
 	}
 
 

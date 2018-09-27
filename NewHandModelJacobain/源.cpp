@@ -90,7 +90,7 @@ void Save_Point_cloud()
 	GetGloveData[26] = pointcloud.PointCloud_center_z;
 
 	ofstream f;
-	f.open("Kinect_Point_cloud3.txt", ios::out);
+	f.open("Kinect_Point_cloud4.txt", ios::out);
 	f << pointcloud.pointcloud_downsample.points.size() << endl;
 	for (int i = 0; i < pointcloud.pointcloud_downsample.points.size(); i++)
 	{
@@ -101,7 +101,7 @@ void Save_Point_cloud()
 
 
 	ofstream f2;
-	f2.open("gloveParams3.txt", ios::out);
+	f2.open("gloveParams4.txt", ios::out);
 	for (int i = 0; i < 27; i++)
 	{
 		f2 << GetGloveData[i] << "  ";
