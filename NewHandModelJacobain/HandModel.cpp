@@ -365,7 +365,7 @@ void HandModel::set_one_rotation(Pose pose, int index)
 	float cz = cos(pose.z / 180 * PI);
 	float sz = sin(pose.z / 180 * PI);
 
-	x(1, 1) = cx; x(2, 2) = cx;
+	x(1, 1) = cx; x(2, 2) = cx;          //这里的旋转矩阵之所以会出现正负号的问题，在于坐标系是左手坐标系还是右手坐标系
 	x(1, 2) = -sx; x(2, 1) = sx;
 
 	y(0, 0) = cy; y(0, 2) = sy;
@@ -374,7 +374,7 @@ void HandModel::set_one_rotation(Pose pose, int index)
 	z(0, 0) = cz; z(1, 1) = cz;
 	z(0, 1) = -sz; z(1, 0) = sz;
 
-	Joints[index].rotation = x*y*z;   //旋转顺序 z-y-x
+	Joints[index].rotation = x*y*z;   //旋转顺序 z-y-x 这里是绕固定的世界zyx轴旋转，也等价于 先绕自身x轴旋转，再绕自身y旋转，最后绕z旋转。二者等价
 }
 
 void HandModel::load_faces(char* filename)
@@ -560,7 +560,19 @@ void HandModel::Updata_Joints_Axis()
 			x(1, 2) = -sx; x(2, 1) = sx;
 
 
-			//这里单独拿出来
+			//这里单独拿出来，因为手部的全局旋转角度变化很大，因此会引起一些问题。若采用如下注释掉的代码，会产生一种现象
+			//当x = 180；y = 0；z = 180，时候，手摸z = 180+50的效果是相当于绕z轴旋转-50度，y = 0+50的效果也是相当于 绕z旋转-50度，而不是认为的正50度；
+			//但是x = 180+50的效果，还就是相当于绕x轴旋转正50度。
+			//实验出的解法是：由于旋转矩阵是 x*y*z，若看作先绕x轴旋转，因此x轴作为实际转轴是等于它原本的轴；
+			//                                            再绕经过x轴旋转后，自身的y轴，也就是 x旋转矩阵 * 原本的y轴，这个轴旋转y度；
+			//                                          最后绕经过xy轴旋转后，自身的z轴，也就是 经过所有旋转变换后的z轴，这个轴旋转z度；
+			//                       （这里采用Joints[0].rotation是因为z轴自身的旋转对自己的轴没影响，也可以换成x*y*Joints[i].dof_axis[2]）
+			//
+			//              以上都属猜想，具体的数学原理没太明白，但是实际检验的效果符合猜想。
+			//Joints[i].CorrespondingAxis[0] << Joints[i].dof_axis[0] + GlobalPosition - handbone_position;
+			//Joints[i].CorrespondingAxis[1] << Joints[i].dof_axis[1] + GlobalPosition - handbone_position;
+			//Joints[i].CorrespondingAxis[2] << Joints[i].dof_axis[2] + GlobalPosition - handbone_position;
+
 			Joints[i].CorrespondingAxis[0] << Joints[i].dof_axis[0] + GlobalPosition - handbone_position;
 			Joints[i].CorrespondingAxis[1] << x*Joints[i].dof_axis[1] + GlobalPosition - handbone_position;
 			Joints[i].CorrespondingAxis[2] << Joints[0].rotation*Joints[i].dof_axis[2] + GlobalPosition - handbone_position;
@@ -568,9 +580,10 @@ void HandModel::Updata_Joints_Axis()
 		else
 		{
 			//其余关节点的坐标都是在该模型坐标系下的局部坐标，因此不需要乘以Local.inverse()转换到局部坐标系下。
-			Joints[i].CorrespondingAxis[0] << Joints[i].global*hand_scale*Joints[i].dof_axis[0] + GlobalPosition - handbone_position;
-			Joints[i].CorrespondingAxis[1] << Joints[i].global*hand_scale*Joints[i].dof_axis[1] + GlobalPosition - handbone_position;
-			Joints[i].CorrespondingAxis[2] << Joints[i].global*hand_scale*Joints[i].dof_axis[2] + GlobalPosition - handbone_position;
+			//另外，没有另外如果i==0做处理，是由于角度变化对于转轴的影响不大，所以通过实际观察，可以不做处理
+			Joints[i].CorrespondingAxis[0] << Joints[i].global*Joints[i].dof_axis[0] + GlobalPosition - handbone_position;
+			Joints[i].CorrespondingAxis[1] << Joints[i].global*Joints[i].dof_axis[1] + GlobalPosition - handbone_position;
+			Joints[i].CorrespondingAxis[2] << Joints[i].global*Joints[i].dof_axis[2] + GlobalPosition - handbone_position;
 		}
 
 	}
@@ -1205,17 +1218,8 @@ void HandModel::MoveToDownSamoleCorrespondingVertices(pcl::PointCloud<pcl::Point
 	dAngles = JtJ.colPivHouseholderQr().solve(JTe);
 
 	for (int i = 0; i < NumberofParams; i++)
-	{
-		//if (i != 15 && i != 16)
-		//{
-		//	Params[i] += dAngles(i);
-		//}
-		//else
-		//{
-		//	Params[i] -= dAngles(i);
-		//}
 		Params[i] += dAngles(i);
-	}
+
 
 
 	Updata(Params);
