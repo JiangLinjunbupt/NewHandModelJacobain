@@ -25,12 +25,11 @@ struct Control {
 
 	}
 };
+Camera *camera = new Camera();
 
 Control control;
-HandModel *handmodel = new HandModel();
+HandModel *handmodel = new HandModel(camera);
 
-
-Camera *camera = new Camera();
 myKinect mykinect(camera);
 DataFrame dataframe;
 HandFinder handfinder(camera);
@@ -113,6 +112,8 @@ void Save_Point_cloud()
 	std::cout << " glove Params save success " << endl;
 
 }
+
+void MixShowResult(cv::Mat input1, cv::Mat input2);
 
 #pragma region OpenGL
 
@@ -343,6 +344,7 @@ void idle() {
 		handmodel->Params[25] = pointcloud.PointCloud_center_y;
 		handmodel->Params[26] = pointcloud.PointCloud_center_z;
 		handmodel->Updata(handmodel->Params);
+
 	}
 
 
@@ -359,19 +361,9 @@ void idle() {
 		}
 	}
 
-	//load_handmodel_visible_cloud(*Handmodel_visible_cloud, *handmodel);
-	//find_correspondences(cloud_correspond);
+	//MixShowResult(handmodel->Generate_handimg(), handfinder.sensor_hand_silhouette);
+
 	itr = 0;
-
-
-
-	//pointcloud.DepthMatToPointCloud(dataframe.depth, &handfinder);
-
-	/*cv::imshow("color_show", dataframe.color);
-	cv::imshow("depth_show", handfinder.sensor_hand_silhouette);
-	cv::waitKey(1);*/
-
-	//cv::imshow("depth_show", handfinder.sensor_hand_silhouette);
 
 	ends_clock = clock();
 	//cout << "Running Time : " << (double)(ends_clock - start) / CLOCKS_PER_SEC << endl;
@@ -464,4 +456,54 @@ int main(int argc, char** argv)
 
 	return 0;
 
+}
+
+
+void MixShowResult(cv::Mat input1, cv::Mat input2)
+{
+	int height = input2.rows;
+	int width = input2.cols;
+	cv::Mat colored_input1 = cv::Mat::zeros(height, width, CV_8UC3);
+	cv::Mat colored_input2 = cv::Mat::zeros(height, width, CV_8UC3);
+	cv::Mat dst;
+	for (int i = 0; i < height; i++)
+	{
+		for (int j = 0; j < width; j++)
+		{
+			if (input1.at<uchar>(i, j) != 0)
+			{
+				colored_input1.at < cv::Vec3b>(i, j)[0] = 0;
+				colored_input1.at < cv::Vec3b>(i, j)[1] = 0;
+				colored_input1.at < cv::Vec3b>(i, j)[2] = 255;
+			}
+			else
+			{
+
+				colored_input1.at < cv::Vec3b>(i, j)[0] = 255;
+				colored_input1.at < cv::Vec3b>(i, j)[1] = 255;
+				colored_input1.at < cv::Vec3b>(i, j)[2] = 255;
+
+			}
+
+			if (input2.at<uchar>(i, j) != 0)
+			{
+				colored_input2.at < cv::Vec3b>(i, j)[0] = 0;
+				colored_input2.at < cv::Vec3b>(i, j)[1] = 255;
+				colored_input2.at < cv::Vec3b>(i, j)[2] = 0;
+			}
+			else
+			{
+
+				colored_input2.at < cv::Vec3b>(i, j)[0] = 255;
+				colored_input2.at < cv::Vec3b>(i, j)[1] = 255;
+				colored_input2.at < cv::Vec3b>(i, j)[2] = 255;
+
+			}
+
+		}
+	}
+
+	cv::addWeighted(colored_input1, 0.5, colored_input2, 0.5, 0.0, dst);
+	cv::imshow("Mixed Result", dst);
+	cvWaitKey(1);
 }

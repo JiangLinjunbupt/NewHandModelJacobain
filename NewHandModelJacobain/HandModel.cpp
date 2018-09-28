@@ -17,7 +17,7 @@ void HandModel::load_glove_data()
 	f.close();
 	printf("Load visible vertices succeed!!!\n");
 }
-HandModel::HandModel()
+HandModel::HandModel(Camera *camera_):camera(camera_)
 {
 	NumofJoints = 22;
 	Joints = new Joint_handmodel[22];
@@ -290,6 +290,7 @@ HandModel::HandModel()
 	load_faces(".\\model\\newFaces.txt");
 	load_weight(".\\model\\newWeights.txt");
 
+	outputImage = cv::Mat::zeros(424, 512, CV_8UC1);
 
 	NumberofParams = 27;
 	Params = new float[27]();
@@ -1248,6 +1249,7 @@ void HandModel::Compute_normal_And_visibel_vertices()
 {
 	Visible_vertices.clear();
 	Visible_vertices_index.clear();
+	Visible_vertices_2D.clear();
 
 	Vertices_normal.setZero();
 	Vector3f A, B, C, BA, BC;
@@ -1288,8 +1290,12 @@ void HandModel::Compute_normal_And_visibel_vertices()
 
 		if (-(Vertices_normal(i, 2)) >= 0)
 		{
-			Vector3f visible_v(vertices_update_(i, 0), vertices_update_(i, 1), vertices_update_(i, 2));
+			Eigen::Vector3f visible_v(vertices_update_(i, 0), vertices_update_(i, 1), vertices_update_(i, 2));
+			Eigen::Vector2i visible_2D;
+			visible_2D << (int)(camera->world_to_depth_image(visible_v)(0)), (int)(camera->world_to_depth_image(visible_v)(1));
+
 			Visible_vertices.push_back(visible_v);
+			Visible_vertices_2D.push_back(visible_2D);
 			Visible_vertices_index.push_back(i);
 		}
 	}
@@ -1689,4 +1695,22 @@ MatrixXf HandModel::Compute_joint_Limited(Eigen::VectorXf & e_limit)
 
 
 	return J_limit;
+}
+
+
+cv::Mat HandModel::Generate_handimg()
+{
+	outputImage.setTo(0);
+	uchar * pointer = outputImage.data;
+	cout << "size" << Visible_vertices_2D.size() << endl;
+	for (int i = 0; i < Visible_vertices_2D.size(); i++)
+	{
+		if((Visible_vertices_2D[i](0)>=0) && 
+			(Visible_vertices_2D[i](0) <=512-1) && 
+			(Visible_vertices_2D[i](1) >= 0)&& 
+			(Visible_vertices_2D[i](1) <=424-1) )
+			pointer[Visible_vertices_2D[i](1)*512 + Visible_vertices_2D[i](0)] = 255;
+	}
+
+	return outputImage;
 }

@@ -3,6 +3,8 @@
 #include<fstream>
 #include<iostream>
 #include<vector>
+#include"Camera.h"
+#include "opencv2/core/core.hpp"    
 #include <pcl/point_types.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/kdtree/kdtree_flann.h>
@@ -65,13 +67,17 @@ public:
 class HandModel
 {
 public:
+
+	Camera * camera;
+
 	Joint_handmodel* Joints;
 
 	Matrix_Nx3 FaceIndex;
 	Matrix_Nx3 Vectices;
 
 	Matrix_Nx3 Vertices_normal;    //和Vectices一起在加载的时候初始化为0矩阵
-	vector<Vector3f> Visible_vertices;
+	vector<Eigen::Vector3f> Visible_vertices;
+	vector<Eigen::Vector2i> Visible_vertices_2D;
 	vector<int> Visible_vertices_index;
 
 	Matrix_Nx3 Joint_matrix;  //这里是将joint*数组中的关节点位置整合到一个矩阵中
@@ -99,7 +105,7 @@ public:
 
 	Eigen::MatrixXf jacobian_correspond;
 
-	HandModel();
+	HandModel(Camera *camera_);
 	~HandModel() { delete ParamsLowerBound; delete ParamsUpperBound; delete Params; }
 	void Updata(float *Params);
 	void Updata_Jacobian();
@@ -112,6 +118,8 @@ public:
 
 	void MoveToDownSamoleCorrespondingVertices(pcl::PointCloud<pcl::PointXYZ>& p, std::vector<int>& cor);
 
+	cv::Mat Generate_handimg();
+	cv::Mat outputImage;
 	bool Solved;
 private:
 	void load_faces(char* file);
