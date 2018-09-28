@@ -38,6 +38,7 @@ private:
 	cv::Mat depth_image[2];
 	cv::Mat color_image[2];
 	cv::Mat sensor_silhouette_buffer;
+	int *idx_image_buffer;
 
 	pcl::PointCloud<pcl::PointXYZ> pointcloud_downSample[2];
 	pcl::PointCloud<pcl::PointXYZ> pointcloud_from_depth[2];

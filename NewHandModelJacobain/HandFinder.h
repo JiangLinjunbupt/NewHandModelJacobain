@@ -4,6 +4,7 @@
 #include "opencv2/highgui/highgui.hpp" ///< cv::imShow
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/imgproc/types_c.h"   ///< CV_BGRA2RGBA
+#include "DistanceTransform.h"
 using namespace cv;
 
 class HandFinder {
@@ -13,6 +14,7 @@ public:
 	HandFinder(Camera * camera);
 	~HandFinder() {
 		delete[] sensor_indicator;
+		distance_transform.cleanup();
 	}
 
 	/// @{ Settings
@@ -34,14 +36,18 @@ public:
 	/// @}
 
 public:
+	DistanceTransform distance_transform;
+
+public:
 	bool _has_useful_data = false;
 	bool _wristband_found;
 
 public:
-	cv::Mat sensor_hand_silhouette; ///< created by binary_classifier             
+	cv::Mat sensor_hand_silhouette; ///< created by binary_classifier     ，存放分割后的手部二值图
 	cv::Mat mask_wristband; ///< created by binary_classifier, not used anywhere else
 	cv::Mat mask_wristband2;
 	int * sensor_indicator;
+	int * idxs_image;
 	int num_sensor_points;
 
 public:

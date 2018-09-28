@@ -153,6 +153,7 @@
   <ItemGroup>
     <ClInclude Include="Camera.h" />
     <ClInclude Include="DataFrame.h" />
+    <ClInclude Include="DistanceTransform.h" />
     <ClInclude Include="HandFinder.h" />
     <ClInclude Include="HandModel.h" />
     <ClInclude Include="MyKinect.h" />

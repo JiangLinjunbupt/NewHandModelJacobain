@@ -42,6 +42,7 @@ myKinect::myKinect(Camera *_camera) :
 
 	sensor_silhouette_buffer = Mat::zeros(cDepthHeight, cDepthWidth, CV_8UC1);
 
+	this->idx_image_buffer = new int[424 * 512];
 	this->m_pcolorcoordinate = new ColorSpacePoint[512 * 424];
 }
 
@@ -130,6 +131,7 @@ void myKinect::fetch_data(DataFrame &frame, HandFinder & other_handfinder, Point
 
 	other_handfinder.sensor_hand_silhouette = sensor_silhouette_buffer.clone();
 	other_handfinder._wristband_found = wristband_found_buffer;
+	std::copy(idx_image_buffer, idx_image_buffer + 424 * 512, other_handfinder.idxs_image);
 
 	//other_pointcloud.pointcloud_vector.swap(pointcloud_vector[FRONT_BUFFER]);
 	other_pointcloud.pointcloud_downsample.points.assign(pointcloud_downSample[FRONT_BUFFER].points.begin(), pointcloud_downSample[FRONT_BUFFER].points.end());
@@ -238,8 +240,9 @@ bool myKinect::run()
 
 
 			sensor_silhouette_buffer = handfinder->sensor_hand_silhouette.clone();
-			wristband_found_buffer = handfinder->_wristband_found;
+			std::copy(handfinder->idxs_image, handfinder->idxs_image + 424 * 512, idx_image_buffer);
 
+			wristband_found_buffer = handfinder->_wristband_found;
 
 			pointcloud_downSample[FRONT_BUFFER].points.swap(pointcloud_downSample[BACK_BUFFER].points);
 			pointcloud_from_depth[FRONT_BUFFER].points.swap(pointcloud_from_depth[BACK_BUFFER].points);

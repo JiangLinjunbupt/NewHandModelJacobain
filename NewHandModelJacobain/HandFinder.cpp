@@ -6,8 +6,9 @@
 HandFinder::HandFinder(Camera *camera) :camera(camera) {
 	CHECK_NOTNULL(camera);
 	sensor_indicator = new int[424 * 512];
-
+	idxs_image = new int[424 * 512];
 	sensor_hand_silhouette = Mat::zeros(424, 512, CV_8UC1);
+	distance_transform.init(512, 424);
 }
 
 Eigen::Vector3f point_at_depth_pixel(cv::Mat& depth, int x, int y, Camera* camera) {
@@ -139,6 +140,10 @@ void HandFinder::binary_classification(cv::Mat& depth, cv::Mat& color) {
 		}
 
 		GaussianBlur(sensor_hand_silhouette, sensor_hand_silhouette, Size(3, 3), 1, 1);
+
+		distance_transform.exec(sensor_hand_silhouette.data, 125);
+
+		std::copy(distance_transform.idxs_image_ptr(), distance_transform.idxs_image_ptr() + 424 * 512, idxs_image);
 
 		if (_settings.show_hand) {
 			cv::imshow("show_hand", sensor_hand_silhouette);

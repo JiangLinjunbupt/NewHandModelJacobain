@@ -3,9 +3,11 @@
 #include "PointCloud.h"
 #include"HandModel.h"
 #include <time.h>
-#include<fstream>
+#include <fstream>
 #include <tchar.h>
 #include <pcl/kdtree/kdtree_flann.h>
+
+#include "DistanceTransform.h"
 
 using namespace std;
 struct Control {
@@ -314,6 +316,20 @@ void idle() {
 	{
 		mykinect.fetch_data(dataframe, handfinder, pointcloud);
 
+		//以下是distance_使用的测试代码，测试表明，能够找到最近的非零点
+		//{
+			//cv::Mat  hand = handfinder.sensor_hand_silhouette;     
+			//circle(hand, cvPoint(100, 200), 10, Scalar(255, 255, 255), -1, 8);
+			//circle(hand, cvPoint(400, 200), 10, Scalar(255, 255, 255), -1, 8);
+			//int idx = handfinder.idxs_image[200*512+100];   
+			//int idx2 = handfinder.idxs_image[200*512+400];
+			//line(hand, cvPoint(100, 200), cvPoint(idx % 512, idx / 512), 255, 5);
+			//line(hand, cvPoint(400, 200), cvPoint(idx2 % 512, idx2 / 512), 255, 5);
+			//circle(hand, cvPoint(idx % 512, idx / 512), 10, Scalar(255, 255, 255), -1, 8);
+			//circle(hand, cvPoint(idx2 % 512, idx2 / 512), 10, Scalar(255, 255, 255), -1, 8);
+			//imshow("hand", hand);
+			//cvWaitKey(1);
+		//}
 
 		for (int i = 0; i < 24; i++)
 		{
