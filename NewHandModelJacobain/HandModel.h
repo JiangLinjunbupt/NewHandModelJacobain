@@ -116,7 +116,7 @@ public:
 	void MoveToJointTarget();
 	void MoveToVerticeTarget();
 
-	void MoveToDownSamoleCorrespondingVertices(pcl::PointCloud<pcl::PointXYZ>& p, std::vector<int>& cor);
+	void MoveToDownSamoleCorrespondingVertices(pcl::PointCloud<pcl::PointXYZ>& p, std::vector<int>& cor, int *idx_img,bool with_sil);
 
 	cv::Mat Generate_handimg();
 	cv::Mat outputImage;
@@ -159,4 +159,6 @@ private:
 	void Compute_normal_And_visibel_vertices();
 
 	MatrixXf Compute_joint_Limited(Eigen::VectorXf & e_limit);
+
+	MatrixXf Compute_Silhouette_Limited(Eigen::VectorXf & e_limit,int *idx_img);
 };

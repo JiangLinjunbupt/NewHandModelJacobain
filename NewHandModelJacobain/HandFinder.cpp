@@ -141,6 +141,8 @@ void HandFinder::binary_classification(cv::Mat& depth, cv::Mat& color) {
 
 		GaussianBlur(sensor_hand_silhouette, sensor_hand_silhouette, Size(3, 3), 1, 1);
 
+		cv::flip(sensor_hand_silhouette, sensor_hand_silhouette, 0);
+
 		distance_transform.exec(sensor_hand_silhouette.data, 125);
 
 		std::copy(distance_transform.idxs_image_ptr(), distance_transform.idxs_image_ptr() + 424 * 512, idxs_image);

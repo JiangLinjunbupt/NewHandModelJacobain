@@ -1151,7 +1151,7 @@ void HandModel::Updata_Jacobian_correspond(std::vector<int> & cor)
 	}
 }
 
-void HandModel::MoveToDownSamoleCorrespondingVertices(pcl::PointCloud<pcl::PointXYZ>& p, std::vector<int>& cor)
+void HandModel::MoveToDownSamoleCorrespondingVertices(pcl::PointCloud<pcl::PointXYZ>& p, std::vector<int>& cor,int *idx_img, bool with_sil)
 {
 	int NumofCorrespond = p.points.size();
 	Eigen::VectorXf e = Eigen::VectorXf::Zero(3 * NumofCorrespond, 1);
@@ -1167,6 +1167,9 @@ void HandModel::MoveToDownSamoleCorrespondingVertices(pcl::PointCloud<pcl::Point
 
 	Eigen::MatrixXf J = jacobian_correspond;
 	Eigen::MatrixXf Jt = jacobian_correspond.transpose();
+
+	Eigen::VectorXf e_sil;
+	Eigen::MatrixXf J_sil = Compute_Silhouette_Limited(e_sil, idx_img);
 
 	Eigen::VectorXf e_limit;
 	Eigen::MatrixXf J_limit = Compute_joint_Limited(e_limit);
@@ -1213,17 +1216,30 @@ void HandModel::MoveToDownSamoleCorrespondingVertices(pcl::PointCloud<pcl::Point
 
 	Eigen::VectorXf dAngles = Eigen::VectorXf::Zero(NumberofParams, 1);
 
-	MatrixXf JtJ = Jt*J + D + omiga_limit*J_limit.transpose()*J_limit;
-	VectorXf JTe = Jt*e + omiga_limit*e_limit;
 
-	dAngles = JtJ.colPivHouseholderQr().solve(JTe);
+	if (with_sil)
+	{
+		MatrixXf JtJ = Jt*J + D + omiga_limit*J_limit.transpose()*J_limit + 5*J_sil.transpose()*J_sil;
+		VectorXf JTe = Jt*e + omiga_limit*e_limit +5*J_sil.transpose()*e_sil;
+		dAngles = JtJ.colPivHouseholderQr().solve(JTe);
+	}
+	else
+	{
+		MatrixXf JtJ = Jt*J + D + omiga_limit*J_limit.transpose()*J_limit;// + J_sil.transpose()*J_sil;
+		VectorXf JTe = Jt*e + omiga_limit*e_limit;// +J_sil.transpose()*e_sil;
+		dAngles = JtJ.colPivHouseholderQr().solve(JTe);
+	}
+
+
+	//cout << "change is " << J_sil.transpose()*J_sil << endl;
 
 	for (int i = 0; i < NumberofParams; i++)
 		Params[i] += dAngles(i);
 
 
-
 	Updata(Params);
+
+
 
 	Eigen::VectorXf e_updata = Eigen::VectorXf::Zero(3 * NumofCorrespond, 1);
 	for (int i = 0; i < NumofCorrespond; i++)
@@ -1243,7 +1259,6 @@ void HandModel::MoveToDownSamoleCorrespondingVertices(pcl::PointCloud<pcl::Point
 	}
 
 }
-
 
 void HandModel::Compute_normal_And_visibel_vertices()
 {
@@ -1697,12 +1712,177 @@ MatrixXf HandModel::Compute_joint_Limited(Eigen::VectorXf & e_limit)
 	return J_limit;
 }
 
+MatrixXf HandModel::Compute_Silhouette_Limited(Eigen::VectorXf & e_sil,int *idx_img)
+{
+	vector<pair<Eigen::Matrix<float, 2, 27>, Eigen::Vector2f>> outside_silhouette;
+
+	for (int i = 0; i < Visible_vertices_2D.size(); i++)
+	{
+		Eigen::Vector3f pixel_3D_position(Visible_vertices[i]);
+		int vert_idx = Visible_vertices_index[i];
+		Eigen::Vector2i pixel_2D_position(Visible_vertices_2D[i]);
+
+		if ((pixel_2D_position(0) >= 0) &&
+			(pixel_2D_position(0) <= 512 - 1) &&
+			(pixel_2D_position(1) >= 0) &&
+			(pixel_2D_position(1) <= 424 - 1))
+		{
+			Eigen::Vector2i pixel_2D_closest;
+			pixel_2D_closest << idx_img[pixel_2D_position(1) * 512 + pixel_2D_position(0)] % 512, idx_img[pixel_2D_position(1) * 512 + pixel_2D_position(0)] / 512;
+
+			float closest_distance = (pixel_2D_closest(0) - pixel_2D_position(0))* (pixel_2D_closest(0) - pixel_2D_position(0)) + (pixel_2D_closest(1) - pixel_2D_position(1))*(pixel_2D_closest(1) - pixel_2D_position(1));
+
+			if (closest_distance > 1)
+			{
+				//计算J和e
+				pair<Eigen::Matrix2Xf, Eigen::Vector2f> J_and_e;
+
+				//先算e
+				Eigen::Vector2f e;
+				e(0) = (float)pixel_2D_closest(0) - (float)pixel_2D_position(0);
+				e(1) = (float)pixel_2D_closest(1) - (float)pixel_2D_position(1);
+
+				J_and_e.second = e;
+
+				//再算J
+				Matrix_2x3 J_perspective = camera->projection_jacobian(pixel_3D_position);
+				Eigen::Matrix<float, 2, 27> J_2D = MatrixXf::Zero(2, 27);    //J_2D = J_perspective * J_3D
+
+				float kk = 3.141592f / 180.0;
+				for (int joint_idx = 0; joint_idx < NumofJoints; joint_idx++)
+				{
+					if (Weights(vert_idx, joint_idx) > 0.0f)
+					{
+						//do some thing follow the kanimatic chains
+						int current_joint_idx = joint_idx;
+						float weight = Weights(vert_idx, joint_idx);
+
+						while (current_joint_idx != -1)
+						{
+							Eigen::Vector3f vertice_position(vertices_update_(vert_idx, 0), vertices_update_(vert_idx, 1), vertices_update_(vert_idx, 2));
+							Eigen::Vector3f joint_position(Joints[current_joint_idx].CorrespondingPosition(0), Joints[current_joint_idx].CorrespondingPosition(1), Joints[current_joint_idx].CorrespondingPosition(2));
+
+							Eigen::Vector3f x_axis_position(Joints[current_joint_idx].CorrespondingAxis[0](0), Joints[current_joint_idx].CorrespondingAxis[0](1), Joints[current_joint_idx].CorrespondingAxis[0](2));
+							Eigen::Vector3f y_axis_position(Joints[current_joint_idx].CorrespondingAxis[1](0), Joints[current_joint_idx].CorrespondingAxis[1](1), Joints[current_joint_idx].CorrespondingAxis[1](2));
+							Eigen::Vector3f z_axis_position(Joints[current_joint_idx].CorrespondingAxis[2](0), Joints[current_joint_idx].CorrespondingAxis[2](1), Joints[current_joint_idx].CorrespondingAxis[2](2));
+
+							Eigen::Vector3f w_x, w_y, w_z;
+							Eigen::Vector3f S;
+
+							w_x << (x_axis_position - joint_position);
+							w_y << (y_axis_position - joint_position);
+							w_z << (z_axis_position - joint_position);
+
+							w_x.normalize();
+							w_y.normalize();
+							w_z.normalize();
+
+							S << (vertice_position - joint_position);
+
+
+							int params_len = Joints[current_joint_idx].params_length;
+							for (int idx = 0; idx < params_len; idx++)
+							{
+								Eigen::Vector3f result;
+								Eigen::Vector2f result_2d;
+								int params_idx = Joints[current_joint_idx].params_index[idx];
+
+
+								switch (Joints[current_joint_idx].params_type[idx])
+								{
+								case dof_type(x_axis_rotate): {
+									result << kk*w_x.cross(S);
+									result_2d = J_perspective*result;
+									J_2D(0, params_idx) += weight*result_2d(0);
+									J_2D(1, params_idx) += weight*result_2d(1);
+									break;
+								}
+								case dof_type(y_axis_rotate): {
+									result << kk*w_y.cross(S);
+									result_2d = J_perspective*result;
+									J_2D(0, params_idx) += weight*result_2d(0);
+									J_2D(1, params_idx) += weight*result_2d(1);
+									break;
+								}
+								case dof_type(z_axis_rotate): {
+									result << kk*w_z.cross(S);
+									result_2d = J_perspective*result;
+									J_2D(0, params_idx) += weight*result_2d(0);
+									J_2D(1, params_idx) += weight*result_2d(1);
+									break;
+								}
+								case dof_type(x_axis_trans): {
+									result << 1, 0, 0;
+									result_2d = J_perspective*result;
+									J_2D(0, params_idx) += weight*result_2d(0);
+									J_2D(1, params_idx) += weight*result_2d(1);
+									break;
+								}
+								case dof_type(y_axis_trans): {
+									result << 0, 1, 0;
+									result_2d = J_perspective*result;
+									J_2D(0, params_idx) += weight*result_2d(0);
+									J_2D(1, params_idx) += weight*result_2d(1);
+									break;
+								}
+								case dof_type(z_axis_trans): {
+									result << 0, 0, 1;
+									result_2d = J_perspective*result;
+									J_2D(0, params_idx) += weight*result_2d(0);
+									J_2D(1, params_idx) += weight*result_2d(1);
+									break;
+								}
+								}
+
+
+							}
+							current_joint_idx = Joints[current_joint_idx].parent_joint_index;
+						}
+					}
+				}
+
+				J_and_e.first = J_2D;
+
+				outside_silhouette.push_back(J_and_e);
+			}
+		}
+	}
+
+	int size = outside_silhouette.size();
+
+	if (size > 0)
+	{
+		MatrixXf J_sil = MatrixXf::Zero(2 * size, 27);
+
+		e_sil = Eigen::VectorXf::Zero(2 * size, 1);
+
+		for (int i = 0; i < size; i++)
+		{
+			J_sil.row(i * 2 + 0) = outside_silhouette[i].first.row(0);
+			J_sil.row(i * 2 + 1) = outside_silhouette[i].first.row(1);
+
+			e_sil.row(i * 2 + 0) = outside_silhouette[i].second.row(0);
+			e_sil.row(i * 2 + 1) = outside_silhouette[i].second.row(1);
+		}
+		return J_sil;
+	}
+	else
+	{
+		cout << "all rendered pixel are in the silhouette " << endl;
+
+		MatrixXf J_sil = MatrixXf::Zero(1, 27);
+
+		e_sil = Eigen::VectorXf::Zero(1, 1);
+
+		return J_sil;
+	}
+}
 
 cv::Mat HandModel::Generate_handimg()
 {
 	outputImage.setTo(0);
 	uchar * pointer = outputImage.data;
-	cout << "size" << Visible_vertices_2D.size() << endl;
+	//cout << "size" << Visible_vertices_2D.size() << endl;
 	for (int i = 0; i < Visible_vertices_2D.size(); i++)
 	{
 		if((Visible_vertices_2D[i](0)>=0) && 

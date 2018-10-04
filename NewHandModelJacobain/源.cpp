@@ -38,6 +38,7 @@ clock_t start;
 clock_t ends_clock;
 
 bool with_Kinect = false;
+bool with_sil = false;
 //共享内存的相关定义
 HANDLE hMapFile;
 LPCTSTR pBuf;
@@ -54,29 +55,43 @@ int itr = 0;
 void load_handmodel_visible_cloud(pcl::PointCloud<pcl::PointXYZ>& cloud, HandModel &hm)
 {
 	cloud.points.clear();
-	for (int i = 0; i < hm.Visible_vertices.size(); i++)
+	if (hm.Visible_vertices.size() == 0)
 	{
-		pcl::PointXYZ p;
-		p.x = hm.Visible_vertices[i](0);
-		p.y = hm.Visible_vertices[i](1);
-		p.z = hm.Visible_vertices[i](2);
-		cloud.points.push_back(p);
+		cerr << "hand model have no Visible_vertices!!!!  please cheak if some thing wrong ? " << endl;
+	}
+	else
+	{
+		for (int i = 0; i < hm.Visible_vertices.size(); i++)
+		{
+			pcl::PointXYZ p;
+			p.x = hm.Visible_vertices[i](0);
+			p.y = hm.Visible_vertices[i](1);
+			p.z = hm.Visible_vertices[i](2);
+			cloud.points.push_back(p);
+		}
 	}
 }
 void find_correspondences(std::vector<int> & correspondences_out)
 {
-	correspondences_out.resize(pointcloud.pointcloud_downsample.points.size());
-
-	pcl::KdTreeFLANN<pcl::PointXYZ> search_kdtree;
-	search_kdtree.setInputCloud(Handmodel_visible_cloud);
-
-	const int k = 1;
-	std::vector<int> k_indices(k);
-	std::vector<float> k_squared_distances(k);
-	for (size_t i = 0; i < pointcloud.pointcloud_downsample.points.size(); ++i)
+	if (Handmodel_visible_cloud->points.size() == 0)
 	{
-		search_kdtree.nearestKSearch(pointcloud.pointcloud_downsample, i, k, k_indices, k_squared_distances);
-		correspondences_out[i] = k_indices[0];
+		cerr << "hand model have no Visible_vertices!!!!  please cheak if some thing wrong ? " << endl;
+	}
+	else
+	{
+		correspondences_out.resize(pointcloud.pointcloud_downsample.points.size());
+
+		pcl::KdTreeFLANN<pcl::PointXYZ> search_kdtree;
+		search_kdtree.setInputCloud(Handmodel_visible_cloud);
+
+		const int k = 1;
+		std::vector<int> k_indices(k);
+		std::vector<float> k_squared_distances(k);
+		for (size_t i = 0; i < pointcloud.pointcloud_downsample.points.size(); ++i)
+		{
+			search_kdtree.nearestKSearch(pointcloud.pointcloud_downsample, i, k, k_indices, k_squared_distances);
+			correspondences_out[i] = k_indices[0];
+		}
 	}
 }
 
@@ -133,6 +148,13 @@ void keyboardDown(unsigned char key, int x, int y) {
 		break;
 	case 'e':
 		with_Kinect = false;
+		with_sil = false;
+		break;
+	case 'w':
+		with_sil = true;
+		break;
+	case 'n':
+		with_sil = false;
 		break;
 	}
 }
@@ -355,13 +377,13 @@ void idle() {
 			load_handmodel_visible_cloud(*Handmodel_visible_cloud, *handmodel);
 			find_correspondences(cloud_correspond);
 
-			handmodel->MoveToDownSamoleCorrespondingVertices(pointcloud.pointcloud_downsample, cloud_correspond);
+			handmodel->MoveToDownSamoleCorrespondingVertices(pointcloud.pointcloud_downsample, cloud_correspond, handfinder.idxs_image, with_sil);
 
 			itr++;
 		}
 	}
 
-	//MixShowResult(handmodel->Generate_handimg(), handfinder.sensor_hand_silhouette);
+	MixShowResult(handmodel->Generate_handimg(), handfinder.sensor_hand_silhouette);
 
 	itr = 0;
 

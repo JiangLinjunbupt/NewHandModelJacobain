@@ -5,6 +5,8 @@ void PointCloud::DepthMatToPointCloud(cv::Mat& depth, HandFinder* hanfinder)
 {
 	this->pointcloud_from_depth.points.clear();
 
+	cv::Mat depth_flip;
+	cv::flip(depth, depth_flip, 0);
 	for (int i = 0; i < hanfinder->num_sensor_points; i++)
 	{
 		pcl::PointXYZ p;
@@ -12,7 +14,7 @@ void PointCloud::DepthMatToPointCloud(cv::Mat& depth, HandFinder* hanfinder)
 		int col = hanfinder->sensor_indicator[i] % 512;        //x
 		int row = hanfinder->sensor_indicator[i] / 512;        //y
 
-		Integer z = depth.at<unsigned short>(row, col);
+		Integer z = depth_flip.at<unsigned short>(row, col);
 
 		Eigen::Vector3f p_pixel = camera->depth_to_world(row, col, z);
 
