@@ -101,7 +101,7 @@ public:
 			/////////////////////////////////////////////////////////////////
 
 			//First PASS (rows)
-			            #pragma omp for
+			//#pragma omp for
 			for (int row = 0; row<height; ++row)
 			{
 				unsigned int k = 0;

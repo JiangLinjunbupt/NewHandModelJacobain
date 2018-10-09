@@ -8,6 +8,7 @@
 #include <pcl/point_types.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/kdtree/kdtree_flann.h>
+#include<queue>
 
 #define PI 3.1415926
 
@@ -68,59 +69,71 @@ class HandModel
 {
 public:
 
+
 	Camera * camera;
 
 	Joint_handmodel* Joints;
 
-	Matrix_Nx3 FaceIndex;
+	Eigen::MatrixXi FaceIndex;
 	Matrix_Nx3 Vectices;
-
+	Eigen::MatrixXf vertices_update_;
 	Matrix_Nx3 Vertices_normal;    //和Vectices一起在加载的时候初始化为0矩阵
+	Matrix_MxN Weights;
+
 	vector<Eigen::Vector3f> Visible_vertices;
 	vector<Eigen::Vector2i> Visible_vertices_2D;
 	vector<int> Visible_vertices_index;
+	vector<Eigen::Vector3f> Face_norm;
+
 
 	Matrix_Nx3 Joint_matrix;  //这里是将joint*数组中的关节点位置整合到一个矩阵中
 	Matrix_Nx3 Target_vertices;
-	Matrix_Nx3 Load_visible_vertices;
-	Matrix_Nx3 Target_joints;
-	Matrix_MxN Weights;
 
-	float hand_scale;
+
 	int NumofJoints;
 	int NumofVertices;
 	int NumofFaces;
-	int Load_visible_vertices_NUM;
 	int NumberofParams;
 
+
+	Vector3f Hand_scale;
 	float *Params;
+	float *init_Params;
+	float *previous_Params;
+
 	int* ParamsUpperBound;
 	int* ParamsLowerBound;
 
 	Eigen::Vector4f GlobalPosition;
-	Eigen::MatrixXf vertices_update_;
-
-	Eigen::MatrixXf jacobian;
-	Eigen::MatrixXf Joints_jacobian;
-
-	Eigen::MatrixXf jacobian_correspond;
 
 	HandModel(Camera *camera_);
 	~HandModel() { delete ParamsLowerBound; delete ParamsUpperBound; delete Params; }
 	void Updata(float *Params);
-	void Updata_Jacobian();
-	void Updata_joints_Jacobian();
 
-	void Updata_Jacobian_correspond(std::vector<int> & cor);
 
-	void MoveToJointTarget();
-	void MoveToVerticeTarget();
+	//jacobain related
+	void MoveToDownSampleCorrespondingVertices(int itr, pcl::PointCloud<pcl::PointXYZ>& p, std::vector<int>& cor, int *idx_img, bool with_sil);
+	bool Solved;
+	bool track_failure;
 
-	void MoveToDownSamoleCorrespondingVertices(pcl::PointCloud<pcl::PointXYZ>& p, std::vector<int>& cor, int *idx_img,bool with_sil);
 
+	//show img 
 	cv::Mat Generate_handimg();
 	cv::Mat outputImage;
-	bool Solved;
+private:
+
+	//jacobain related
+	Eigen::MatrixXf Joints_jacobian;
+	Eigen::MatrixXf jacobian_correspond;
+
+	void Updata_joints_Jacobian();
+	Eigen::MatrixXf Compute_one_Joint_Jacobian(int index);
+
+	void Updata_Jacobian_correspond(std::vector<int> & cor);
+	Eigen::MatrixXf Compute_one_Vertex_Jacobain(int index);
+
+	std::queue<Eigen::Matrix<float,22,3>> temporal_position;
+
 private:
 	void load_faces(char* file);
 	void load_vertices(char* file);
@@ -130,10 +143,23 @@ private:
 	void compute_parent_child_transform();
 	void compute_global_matrix();
 	void compute_rotation_matrix(float* params);
-	void set_one_rotation(Pose p, int index);
-	void Updata_Joints_Axis();
+	void set_one_rotation(const Pose& p, int index);
+	void Updata_Joints();
+	void Updata_axis();
 	void Updata_Vertics();
+	void Compute_normal_And_visibel_vertices();
 
+	void SetParamsBound();
+
+	//jacobain related
+	MatrixXf Compute_joint_Limited(Eigen::VectorXf & e_limit);
+
+	MatrixXf Compute_Silhouette_Limited(Eigen::VectorXf & e_limit,int *idx_img);
+
+	MatrixXf Compute_Temporal_Limited(Eigen::VectorXf & e_limit,bool first_order);
+
+
+private:
 	void normalize(float axis[3]) {
 		float sum = sqrt(axis[0] * axis[0] + axis[1] * axis[1] + axis[2] * axis[2]);
 		axis[0] /= (sum + 1e-20f);
@@ -147,18 +173,4 @@ private:
 		axis_c[2] = axis_a[0] * axis_b[1] - axis_a[1] * axis_b[0];
 	}
 
-	void save_target_vertices();
-	void load_target_vertices();
-	void save_target_joints();
-	void load_target_joints();
-
-	void save_visible_vertices();
-	void load_visible_vertices();
-
-	void load_glove_data();
-	void Compute_normal_And_visibel_vertices();
-
-	MatrixXf Compute_joint_Limited(Eigen::VectorXf & e_limit);
-
-	MatrixXf Compute_Silhouette_Limited(Eigen::VectorXf & e_limit,int *idx_img);
 };

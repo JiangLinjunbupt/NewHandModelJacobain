@@ -6,7 +6,7 @@
 #include <fstream>
 #include <tchar.h>
 #include <pcl/kdtree/kdtree_flann.h>
-
+#include<math.h>
 #include "DistanceTransform.h"
 
 using namespace std;
@@ -39,13 +39,14 @@ clock_t ends_clock;
 
 bool with_Kinect = false;
 bool with_sil = false;
+bool show_mesh = true;
 //共享内存的相关定义
 HANDLE hMapFile;
 LPCTSTR pBuf;
 #define BUF_SIZE 1024
 TCHAR szName[] = TEXT("Global\\MyFileMappingObject");    //指向同一块共享内存的名字
 float *GetSharedMemeryPtr;
-float *GetGloveData = new float[27];
+float *GetGloveData = new float[26];
 
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr Handmodel_visible_cloud(new pcl::PointCloud<pcl::PointXYZ>);
@@ -87,7 +88,7 @@ void find_correspondences(std::vector<int> & correspondences_out)
 		const int k = 1;
 		std::vector<int> k_indices(k);
 		std::vector<float> k_squared_distances(k);
-		for (size_t i = 0; i < pointcloud.pointcloud_downsample.points.size(); ++i)
+		for (int i = 0; i < pointcloud.pointcloud_downsample.points.size(); ++i)
 		{
 			search_kdtree.nearestKSearch(pointcloud.pointcloud_downsample, i, k, k_indices, k_squared_distances);
 			correspondences_out[i] = k_indices[0];
@@ -95,40 +96,9 @@ void find_correspondences(std::vector<int> & correspondences_out)
 	}
 }
 
-void Save_Point_cloud()
-{
-	for (int i = 0; i < 24; i++)
-	{
-		GetGloveData[i] = GetSharedMemeryPtr[i];
-	}
-	GetGloveData[24] = pointcloud.PointCloud_center_x;
-	GetGloveData[25] = pointcloud.PointCloud_center_y;
-	GetGloveData[26] = pointcloud.PointCloud_center_z;
-
-	ofstream f;
-	f.open("Kinect_Point_cloud4.txt", ios::out);
-	f << pointcloud.pointcloud_downsample.points.size() << endl;
-	for (int i = 0; i < pointcloud.pointcloud_downsample.points.size(); i++)
-	{
-		f << pointcloud.pointcloud_downsample.points[i].x << "  " << pointcloud.pointcloud_downsample.points[i].y << "  " << pointcloud.pointcloud_downsample.points[i].z << endl;
-	}
-	f.close();
-	std::cout << " Kinect Point Cloud save success , the Point Num is : " << pointcloud.pointcloud_downsample.points.size() << endl;
-
-
-	ofstream f2;
-	f2.open("gloveParams4.txt", ios::out);
-	for (int i = 0; i < 27; i++)
-	{
-		f2 << GetGloveData[i] << "  ";
-	}
-	f2 << endl;
-	f2.close();
-	std::cout << " glove Params save success " << endl;
-
-}
-
 void MixShowResult(cv::Mat input1, cv::Mat input2);
+
+void judge_initParams();
 
 #pragma region OpenGL
 
@@ -140,9 +110,6 @@ void keyboardDown(unsigned char key, int x, int y) {
 	switch (key) {
 	case  27:   // ESC
 		exit(0);
-	case 's':
-		Save_Point_cloud();
-		break;
 	case 'b':
 		with_Kinect = true;
 		break;
@@ -156,6 +123,9 @@ void keyboardDown(unsigned char key, int x, int y) {
 	case 'n':
 		with_sil = false;
 		break;
+	case 'm':
+		show_mesh = !show_mesh;
+		break;
 	}
 }
 
@@ -164,7 +134,23 @@ void keyboardUp(unsigned char key, int x, int y) {}
 
 #pragma endregion  Keybroad_event(show mesh or not)
 
+void light() {
+	glEnable(GL_LIGHTING);
+	glEnable(GL_NORMALIZE);
+	// 定义太阳光源，它是一种白色的光源  
+	GLfloat sun_light_position[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	GLfloat sun_light_ambient[] = { 0.25f, 0.25f, 0.15f, 1.0f };
+	GLfloat sun_light_diffuse[] = { 0.7f, 0.7f, 0.55f, 1.0f };
+	GLfloat sun_light_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
 
+	glLightfv(GL_LIGHT0, GL_POSITION, sun_light_position); //指定第0号光源的位置   
+	glLightfv(GL_LIGHT0, GL_AMBIENT, sun_light_ambient); //GL_AMBIENT表示各种光线照射到该材质上，  
+														 //经过很多次反射后最终遗留在环境中的光线强度（颜色）  
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, sun_light_diffuse); //漫反射后~~  
+	glLightfv(GL_LIGHT0, GL_SPECULAR, sun_light_specular);//镜面反射后~~~  
+
+	glEnable(GL_LIGHT0); //使用第0号光照   
+}
 /* reshaped window */
 void reshape(int width, int height) {
 
@@ -186,58 +172,44 @@ void mouseClick(int button, int state, int x, int y) {
 	control.y = y;
 }
 
-/* executed when the mouse moves to position ('x', 'y') */
 /* render the scene */
-void draw() {
 
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glMatrixMode(GL_MODELVIEW);
-	gluPerspective(180, 1.5, -1000, 1000);
-	glLoadIdentity();
-	control.gx = handmodel->GlobalPosition(0);
-	control.gy = handmodel->GlobalPosition(1);
-	control.gz = handmodel->GlobalPosition(2);
-	double r = 200;
-	double x = r*sin(control.roty)*cos(control.rotx);
-	double y = r*sin(control.roty)*sin(control.rotx);
-	double z = r*cos(control.roty);
-	//cout<< x <<" "<< y <<" " << z<<endl;
-	gluLookAt(x + control.gx, y + control.gy, z + control.gz, control.gx, control.gy, control.gz, 0.0, 1.0, 0.0);//个人理解最开始是看向-z的，之后的角度是在global中心上叠加的，所以要加
-
-
-
-																												 ///* render the scene here */
+void draw_Mesh()
+{
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
 	{
-		glPointSize(2);
-		glBegin(GL_POINTS);
-		glColor3d(1.0, 1.0, 0.0);
-		for (int i = 0; i < handmodel->NumofVertices; i++) {
-			glVertex3d(handmodel->vertices_update_(i, 0), handmodel->vertices_update_(i, 1), handmodel->vertices_update_(i, 2));
+		glColor3f(0.4, 0.8, 0.3);
+		glBegin(GL_TRIANGLES);
+		for (int i = 0; i < handmodel->NumofFaces; i++)
+		{
+
+			glNormal3f(handmodel->Face_norm[i](0), handmodel->Face_norm[i](1), handmodel->Face_norm[i](2));
+
+			glVertex3f(handmodel->vertices_update_(handmodel->FaceIndex(i, 0), 0), handmodel->vertices_update_(handmodel->FaceIndex(i, 0), 1), handmodel->vertices_update_(handmodel->FaceIndex(i, 0), 2));
+			glVertex3f(handmodel->vertices_update_(handmodel->FaceIndex(i, 1), 0), handmodel->vertices_update_(handmodel->FaceIndex(i, 1), 1), handmodel->vertices_update_(handmodel->FaceIndex(i, 1), 2));
+			glVertex3f(handmodel->vertices_update_(handmodel->FaceIndex(i, 2), 0), handmodel->vertices_update_(handmodel->FaceIndex(i, 2), 1), handmodel->vertices_update_(handmodel->FaceIndex(i, 2), 2));
 		}
 		glEnd();
-
-
-		//glPointSize(2);
-		//glBegin(GL_POINTS);
-		//glColor3d(0.0, 1.0, 0.0);
-		//for (int i = 0; i < handmodel->NumofVertices; i++) {
-		//	glVertex3d(handmodel->Target_vertices(i, 0), handmodel->Target_vertices(i, 1), handmodel->Target_vertices(i, 2));
-		//}
-		//glEnd();
-
-
-		//for (int i = 0; i < handmodel->NumofVertices; i = i+10) {
-		//	glVertex3d(handmodel->Target_vertices(i, 0), handmodel->Target_vertices(i, 1), handmodel->Target_vertices(i, 2));
-		//	glLineWidth(1);
-		//	glColor3f(1.0, 1.0, 1.0);
-		//	glBegin(GL_LINES);
-		//	glVertex3d(handmodel->Target_vertices(i, 0), handmodel->Target_vertices(i, 1), handmodel->Target_vertices(i, 2));
-		//	glVertex3d(handmodel->vertices_update_(i, 0), handmodel->vertices_update_(i, 1), handmodel->vertices_update_(i, 2));
-		//	glEnd();
-		//}
 	}
-
-
+}
+void draw_Vertex()
+{
+	glDisable(GL_LIGHT0);
+	glDisable(GL_LIGHTING);
+	glPointSize(2);
+	glBegin(GL_POINTS);
+	glColor3d(1.0, 1.0, 0.0);
+	for (int i = 0; i < handmodel->NumofVertices; i++) {
+		glVertex3d(handmodel->vertices_update_(i, 0), handmodel->vertices_update_(i, 1), handmodel->vertices_update_(i, 2));
+	}
+	glEnd();
+}
+void draw_skeleton()
+{
+	glDisable(GL_LIGHT0);
+	glDisable(GL_LIGHTING);
+	//画骨架
 	for (int i = 0; i < handmodel->NumofJoints; i++) {
 		//画点开始 
 		glColor3f(1.0, 0.0, 0.0);
@@ -258,66 +230,70 @@ void draw() {
 			glVertex3f(handmodel->Joints[parent_joint_index].CorrespondingPosition(0), handmodel->Joints[parent_joint_index].CorrespondingPosition(1), handmodel->Joints[parent_joint_index].CorrespondingPosition(2));
 			glEnd();
 		}
-
-		//glLineWidth(2);
-		//glColor3f(1.0, 1.0, 1);
-		//glBegin(GL_LINES);
-		//glVertex3f(handmodel->Joints[i].CorrespondingPosition(0), handmodel->Joints[i].CorrespondingPosition(1), handmodel->Joints[i].CorrespondingPosition(2));
-		//glVertex3f(handmodel->Target_joints(i, 0), handmodel->Target_joints(i, 1), handmodel->Target_joints(i, 2));
-		//glEnd();
-
-		//画线结束
 	}
-
-
-	//for (int i = 0; i < handmodel->NumofJoints; i++) {
-	//	//画点开始 
-	//	glColor3f(0.0, 1.0, 0.0);
-	//	glPushMatrix();
-	//	glTranslatef(handmodel->Target_joints(i,0), handmodel->Target_joints(i,1), handmodel->Target_joints(i,2));
-	//	glutSolidSphere(5, 31, 10);
-	//	glPopMatrix();
-
-	//	//画点结束，使用push和popmatrix是因为保证每个关节点的偏移都是相对于全局坐标中心点做的变换。
-	//}
-
-	//glPointSize(2);
-	//glBegin(GL_POINTS);
-	//glColor3d(1.0, 1.0, 0.0);
-	//for (int i = 0; i < handmodel->Visible_vertices.size(); i++) {
-	//	glVertex3d(handmodel->Visible_vertices[i](0), handmodel->Visible_vertices[i](1), handmodel->Visible_vertices[i](2));
-	//}
-	//glEnd();
-
-
+}
+void draw_Visible_vertex()
+{
+	glDisable(GL_LIGHT0);
+	glDisable(GL_LIGHTING);
 	glPointSize(2);
 	glBegin(GL_POINTS);
-	glColor3d(1.0, 0.0, 0.0);
+	glColor3d(1.0, 1.0, 0.0);
+	for (int i = 0; i < handmodel->Visible_vertices.size(); i++) {
+		glVertex3d(handmodel->Visible_vertices[i](0), handmodel->Visible_vertices[i](1), handmodel->Visible_vertices[i](2));
+	}
+	glEnd();
+
+}
+void draw_CloudPoint()
+{
+	glDisable(GL_LIGHT0);
+	glDisable(GL_LIGHTING);
+	glPointSize(2);
+	glBegin(GL_POINTS);
+	glColor3f(1.0f, 0.0f, 0.0f);
 	for (int i = 0; i < pointcloud.pointcloud_from_depth.points.size(); i++) {
 		glVertex3d(pointcloud.pointcloud_from_depth.points[i].x, pointcloud.pointcloud_from_depth.points[i].y, pointcloud.pointcloud_from_depth.points[i].z);
 	}
 	glEnd();
+}
+void draw_Cooresponding_connection()
+{
+	glDisable(GL_LIGHT0);
+	glDisable(GL_LIGHTING);
+	for (int i = 0; i < cloud_correspond.size(); i++)
+	{
+		glLineWidth(2);
+		glColor3f(1.0, 1.0, 1);
+		glBegin(GL_LINES);
+		glVertex3d(pointcloud.pointcloud_downsample.points[i].x, pointcloud.pointcloud_downsample.points[i].y, pointcloud.pointcloud_downsample.points[i].z);
+		glVertex3d(Handmodel_visible_cloud->points[cloud_correspond[i]].x, Handmodel_visible_cloud->points[cloud_correspond[i]].y, Handmodel_visible_cloud->points[cloud_correspond[i]].z);
+		glEnd();
+	}
+}
+void draw() {
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glMatrixMode(GL_MODELVIEW);
+	gluPerspective(180, 1.5, -1000, 1000);
+	glLoadIdentity();
+	control.gx = handmodel->GlobalPosition(0);
+	control.gy = handmodel->GlobalPosition(1);
+	control.gz = handmodel->GlobalPosition(2);
+	double r = 200;
+	double x = r*sin(control.roty)*cos(control.rotx);
+	double y = r*sin(control.roty)*sin(control.rotx);
+	double z = r*cos(control.roty);
+	//cout<< x <<" "<< y <<" " << z<<endl;
+	gluLookAt(x + control.gx, y + control.gy, z + control.gz, control.gx, control.gy, control.gz, 0.0, 1.0, 0.0);//个人理解最开始是看向-z的，之后的角度是在global中心上叠加的，所以要加
 
 
-	//glPointSize(2);
-	//glBegin(GL_POINTS);
-	//glColor3d(1.0, 0.0, 0.0);
-	//for (int i = 0; i < downSample_visible_cloud->points.size(); i++) {
-	//	glVertex3d(downSample_visible_cloud->points[i].x, downSample_visible_cloud->points[i].y, downSample_visible_cloud->points[i].z);
-	//}
-	//glEnd();
-
-
-	//for (int i = 0; i < cloud_correspond.size(); i++)
-	//{
-	//	glLineWidth(2);
-	//	glColor3f(1.0, 1.0, 1);
-	//	glBegin(GL_LINES);
-	//	glVertex3d(pointcloud.pointcloud_downsample.points[i].x, pointcloud.pointcloud_downsample.points[i].y, pointcloud.pointcloud_downsample.points[i].z);
-	//	glVertex3d(Handmodel_visible_cloud->points[cloud_correspond[i]].x, Handmodel_visible_cloud->points[cloud_correspond[i]].y, Handmodel_visible_cloud->points[cloud_correspond[i]].z);
-	//	glEnd();
-	//}
-
+	draw_Mesh();
+	draw_skeleton();
+	if (with_Kinect)
+	{
+		draw_Cooresponding_connection();
+	}
 
 	glFlush();
 	glutSwapBuffers();
@@ -331,6 +307,7 @@ void mouseMotion(int x, int y) {
 	//cout<< control.rotx <<" " << control.roty << endl;
 	glutPostRedisplay();
 }
+
 
 void idle() {
 	start = clock();
@@ -354,17 +331,16 @@ void idle() {
 			//cvWaitKey(1);
 		//}
 
-		for (int i = 0; i < 24; i++)
+		for (int i = 0; i < 26; i++)
 		{
-			handmodel->Params[i] = GetSharedMemeryPtr[i];
+			handmodel->init_Params[i] = GetSharedMemeryPtr[i];
 		}
-		handmodel->Params[16] = -handmodel->Params[16];
-		handmodel->Params[17] = -handmodel->Params[17];
-		handmodel->Params[18] = -handmodel->Params[18];
 
-		handmodel->Params[24] = pointcloud.PointCloud_center_x;
-		handmodel->Params[25] = pointcloud.PointCloud_center_y;
-		handmodel->Params[26] = pointcloud.PointCloud_center_z;
+		handmodel->init_Params[0] = pointcloud.PointCloud_center_x;
+		handmodel->init_Params[1] = pointcloud.PointCloud_center_y;
+		handmodel->init_Params[2] = pointcloud.PointCloud_center_z;
+
+		judge_initParams();
 		handmodel->Updata(handmodel->Params);
 
 	}
@@ -372,21 +348,30 @@ void idle() {
 
 	if (with_Kinect)
 	{
-		while (itr < 20)
+		//a function to judge init_Params from glovedata or form previous_Params
+		//judge_initParams();
+
+		while (!handmodel->Solved)
 		{
 			load_handmodel_visible_cloud(*Handmodel_visible_cloud, *handmodel);
 			find_correspondences(cloud_correspond);
 
-			handmodel->MoveToDownSamoleCorrespondingVertices(pointcloud.pointcloud_downsample, cloud_correspond, handfinder.idxs_image, with_sil);
+			handmodel->MoveToDownSampleCorrespondingVertices(itr, pointcloud.pointcloud_downsample, cloud_correspond, handfinder.idxs_image, with_sil);
 
 			itr++;
 		}
+
+		if (handmodel->track_failure)
+		{
+			handmodel->Updata(handmodel->init_Params);
+		}
 	}
+
 
 	MixShowResult(handmodel->Generate_handimg(), handfinder.sensor_hand_silhouette);
 
 	itr = 0;
-
+	handmodel->Solved = false;
 	ends_clock = clock();
 	//cout << "Running Time : " << (double)(ends_clock - start) / CLOCKS_PER_SEC << endl;
 
@@ -402,6 +387,8 @@ void initGL(int width, int height) {
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
+	light();
+
 }
 
 #pragma endregion 
@@ -528,4 +515,178 @@ void MixShowResult(cv::Mat input1, cv::Mat input2)
 	cv::addWeighted(colored_input1, 0.5, colored_input2, 0.5, 0.0, dst);
 	cv::imshow("Mixed Result", dst);
 	cvWaitKey(1);
+}
+
+
+void judge_initParams()
+{
+	float save_0 = handmodel->init_Params[0];
+	float save_1 = handmodel->init_Params[1];
+	float save_2 = handmodel->init_Params[2];
+
+	float save_3 = handmodel->init_Params[3];
+	float save_4 = handmodel->init_Params[4];
+	float save_5 = handmodel->init_Params[5];
+
+
+	if (handmodel->previous_Params[2] != 0)
+	{
+		handmodel->Updata(handmodel->init_Params);
+		load_handmodel_visible_cloud(*Handmodel_visible_cloud, *handmodel);
+		find_correspondences(cloud_correspond);
+
+		int NumofCorrespond = pointcloud.pointcloud_downsample.points.size();
+
+		float e_glove = 0;
+
+		for (int i = 0; i < NumofCorrespond; i++)
+		{
+			float distance = sqrt((pointcloud.pointcloud_downsample.points[i].x - handmodel->Visible_vertices[cloud_correspond[i]].x())*(pointcloud.pointcloud_downsample.points[i].x - handmodel->Visible_vertices[cloud_correspond[i]].x()) +
+				(pointcloud.pointcloud_downsample.points[i].y - handmodel->Visible_vertices[cloud_correspond[i]].y())*(pointcloud.pointcloud_downsample.points[i].y - handmodel->Visible_vertices[cloud_correspond[i]].y()) +
+				(pointcloud.pointcloud_downsample.points[i].z - handmodel->Visible_vertices[cloud_correspond[i]].z())*(pointcloud.pointcloud_downsample.points[i].z - handmodel->Visible_vertices[cloud_correspond[i]].z()));
+
+			e_glove += distance;
+		}
+
+		for (int i = 0; i < handmodel->Visible_vertices_2D.size(); i++)
+		{
+			Eigen::Vector3f pixel_3D_position(handmodel->Visible_vertices[i]);
+			int vert_idx = handmodel->Visible_vertices_index[i];
+			Eigen::Vector2i pixel_2D_position(handmodel->Visible_vertices_2D[i]);
+
+			if ((pixel_2D_position(0) >= 0) &&
+				(pixel_2D_position(0) <= 512 - 1) &&
+				(pixel_2D_position(1) >= 0) &&
+				(pixel_2D_position(1) <= 424 - 1))
+			{
+				Eigen::Vector2i pixel_2D_closest;
+				pixel_2D_closest << handfinder.idxs_image[pixel_2D_position(1) * 512 + pixel_2D_position(0)] % 512, handfinder.idxs_image[pixel_2D_position(1) * 512 + pixel_2D_position(0)] / 512;
+
+				float closest_distance = (pixel_2D_closest(0) - pixel_2D_position(0))* (pixel_2D_closest(0) - pixel_2D_position(0)) + (pixel_2D_closest(1) - pixel_2D_position(1))*(pixel_2D_closest(1) - pixel_2D_position(1));
+
+				e_glove += sqrt(closest_distance);
+			}
+		}
+
+
+
+		handmodel->Updata(handmodel->previous_Params);
+		load_handmodel_visible_cloud(*Handmodel_visible_cloud, *handmodel);
+		find_correspondences(cloud_correspond);
+
+		float e_previous = 0;
+
+		for (int i = 0; i < NumofCorrespond; i++)
+		{
+			float distance = sqrt((pointcloud.pointcloud_downsample.points[i].x - handmodel->Visible_vertices[cloud_correspond[i]].x())*(pointcloud.pointcloud_downsample.points[i].x - handmodel->Visible_vertices[cloud_correspond[i]].x()) +
+				(pointcloud.pointcloud_downsample.points[i].y - handmodel->Visible_vertices[cloud_correspond[i]].y())*(pointcloud.pointcloud_downsample.points[i].y - handmodel->Visible_vertices[cloud_correspond[i]].y()) +
+				(pointcloud.pointcloud_downsample.points[i].z - handmodel->Visible_vertices[cloud_correspond[i]].z())*(pointcloud.pointcloud_downsample.points[i].z - handmodel->Visible_vertices[cloud_correspond[i]].z()));
+
+			e_previous += distance;
+		}
+
+		for (int i = 0; i < handmodel->Visible_vertices_2D.size(); i++)
+		{
+			Eigen::Vector3f pixel_3D_position(handmodel->Visible_vertices[i]);
+			int vert_idx = handmodel->Visible_vertices_index[i];
+			Eigen::Vector2i pixel_2D_position(handmodel->Visible_vertices_2D[i]);
+
+			if ((pixel_2D_position(0) >= 0) &&
+				(pixel_2D_position(0) <= 512 - 1) &&
+				(pixel_2D_position(1) >= 0) &&
+				(pixel_2D_position(1) <= 424 - 1))
+			{
+				Eigen::Vector2i pixel_2D_closest;
+				pixel_2D_closest << handfinder.idxs_image[pixel_2D_position(1) * 512 + pixel_2D_position(0)] % 512, handfinder.idxs_image[pixel_2D_position(1) * 512 + pixel_2D_position(0)] / 512;
+
+				float closest_distance = (pixel_2D_closest(0) - pixel_2D_position(0))* (pixel_2D_closest(0) - pixel_2D_position(0)) + (pixel_2D_closest(1) - pixel_2D_position(1))*(pixel_2D_closest(1) - pixel_2D_position(1));
+
+				e_previous += sqrt(closest_distance);
+			}
+		}
+
+
+		handmodel->init_Params[0] = handmodel->previous_Params[0];
+		handmodel->init_Params[1] = handmodel->previous_Params[1];
+		handmodel->init_Params[2] = handmodel->previous_Params[2];
+
+		handmodel->init_Params[3] = handmodel->previous_Params[3];
+		handmodel->init_Params[4] = handmodel->previous_Params[4];
+		handmodel->init_Params[5] = handmodel->previous_Params[5];
+
+
+		handmodel->Updata(handmodel->init_Params);
+		load_handmodel_visible_cloud(*Handmodel_visible_cloud, *handmodel);
+		find_correspondences(cloud_correspond);
+
+		float e_glove_and_prevoius = 0;
+
+		for (int i = 0; i < NumofCorrespond; i++)
+		{
+			float distance = sqrt((pointcloud.pointcloud_downsample.points[i].x - handmodel->Visible_vertices[cloud_correspond[i]].x())*(pointcloud.pointcloud_downsample.points[i].x - handmodel->Visible_vertices[cloud_correspond[i]].x()) +
+				(pointcloud.pointcloud_downsample.points[i].y - handmodel->Visible_vertices[cloud_correspond[i]].y())*(pointcloud.pointcloud_downsample.points[i].y - handmodel->Visible_vertices[cloud_correspond[i]].y()) +
+				(pointcloud.pointcloud_downsample.points[i].z - handmodel->Visible_vertices[cloud_correspond[i]].z())*(pointcloud.pointcloud_downsample.points[i].z - handmodel->Visible_vertices[cloud_correspond[i]].z()));
+
+			e_glove_and_prevoius += distance;
+		}
+
+		for (int i = 0; i < handmodel->Visible_vertices_2D.size(); i++)
+		{
+			Eigen::Vector3f pixel_3D_position(handmodel->Visible_vertices[i]);
+			int vert_idx = handmodel->Visible_vertices_index[i];
+			Eigen::Vector2i pixel_2D_position(handmodel->Visible_vertices_2D[i]);
+
+			if ((pixel_2D_position(0) >= 0) &&
+				(pixel_2D_position(0) <= 512 - 1) &&
+				(pixel_2D_position(1) >= 0) &&
+				(pixel_2D_position(1) <= 424 - 1))
+			{
+				Eigen::Vector2i pixel_2D_closest;
+				pixel_2D_closest << handfinder.idxs_image[pixel_2D_position(1) * 512 + pixel_2D_position(0)] % 512, handfinder.idxs_image[pixel_2D_position(1) * 512 + pixel_2D_position(0)] / 512;
+
+				float closest_distance = (pixel_2D_closest(0) - pixel_2D_position(0))* (pixel_2D_closest(0) - pixel_2D_position(0)) + (pixel_2D_closest(1) - pixel_2D_position(1))*(pixel_2D_closest(1) - pixel_2D_position(1));
+
+				e_glove_and_prevoius += sqrt(closest_distance);
+			}
+		}
+
+		if (e_glove_and_prevoius < e_previous && e_glove_and_prevoius < e_glove)
+		{
+			for (int i = 0; i < 26; i++)
+			{
+				handmodel->Params[i] = handmodel->init_Params[i];
+				//cout << "using merge Params as init_Params       e_merge is  :  " << e_glove_and_prevoius << "   e_glove  is : " << e_glove << endl;
+			}
+		}
+
+		if (e_previous <e_glove_and_prevoius && e_previous<e_glove)
+		{
+			for (int i = 0; i < 26; i++)
+			{
+				handmodel->Params[i] = handmodel->previous_Params[i];
+				//cout << "using previous Params as init_Params       e_prevoius is  :  " << e_previous << "   e_glove  is : " << e_glove << endl;
+			}
+			return;
+		}
+
+	}
+
+
+
+	handmodel->init_Params[0] = save_0;
+	handmodel->init_Params[1] = save_1;
+	handmodel->init_Params[2] = save_2;
+
+	handmodel->init_Params[3] = save_3;
+	handmodel->init_Params[4] = save_4;
+	handmodel->init_Params[5] = save_5;
+
+	for (int i = 0; i < 26; i++)
+	{
+		handmodel->Params[i] = handmodel->init_Params[i];
+		//cout << "using init Params as init_Params"<< endl;
+	}
+
+	return;
+
 }

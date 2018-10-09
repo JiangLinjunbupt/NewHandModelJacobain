@@ -52,7 +52,7 @@ void PointCloud::downSample()
 {
 	pcl::VoxelGrid<pcl::PointXYZ> sor;  //体素栅格下采样对象
 	sor.setInputCloud(pointcloud_filtered.makeShared());             //原始点云
-	sor.setLeafSize(10.0f, 10.0f, 10.0f);    // 设置采样体素大小
+	sor.setLeafSize(8.0f, 8.0f, 8.0f);    // 设置采样体素大小
 	sor.filter(pointcloud_downsample);        //保存
 
 	//std::cout << "after filter ,the point cloud size is : " << after_cloud.points.size() << std::endl;

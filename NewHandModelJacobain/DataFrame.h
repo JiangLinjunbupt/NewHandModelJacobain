@@ -16,7 +16,7 @@ struct DataFrame {
 	/// @param vertical pixel
 	/// @param camera parameters to invert the transformation
 	Eigen::Vector3f point_at_pixel(int x, int y, Camera* camera) {
-		Integer z = depth_at_pixel(x, y);
+		float z = depth_at_pixel(x, y);
 		return camera->depth_to_world(x, y, z);
 	}
 
