@@ -9,7 +9,7 @@
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/kdtree/kdtree_flann.h>
 #include<queue>
-
+#include<math.h>
 #define PI 3.1415926
 
 
@@ -112,7 +112,7 @@ public:
 
 
 	//jacobain related
-	void MoveToDownSampleCorrespondingVertices(int itr, pcl::PointCloud<pcl::PointXYZ>& p, std::vector<int>& cor, int *idx_img, bool with_sil);
+	void MoveToDownSampleCorrespondingVertices(int itr, pcl::PointCloud<pcl::PointXYZ>& p, std::vector<int>& cor, int *idx_img, bool with_sil, bool has_glove);
 	bool Solved;
 	bool track_failure;
 
@@ -152,7 +152,7 @@ private:
 	void SetParamsBound();
 
 	//jacobain related
-	MatrixXf Compute_joint_Limited(Eigen::VectorXf & e_limit);
+	MatrixXf Compute_joint_Limited(Eigen::VectorXf & e_limit, bool has_glove);
 
 	MatrixXf Compute_Silhouette_Limited(Eigen::VectorXf & e_limit,int *idx_img);
 

@@ -40,6 +40,7 @@ clock_t ends_clock;
 bool with_Kinect = false;
 bool with_sil = false;
 bool show_mesh = true;
+bool has_glove = false;
 //共享内存的相关定义
 HANDLE hMapFile;
 LPCTSTR pBuf;
@@ -99,6 +100,7 @@ void find_correspondences(std::vector<int> & correspondences_out)
 void MixShowResult(cv::Mat input1, cv::Mat input2);
 
 void judge_initParams();
+float Comput_e(float* params);
 
 #pragma region OpenGL
 
@@ -290,6 +292,7 @@ void draw() {
 
 	draw_Mesh();
 	draw_skeleton();
+	draw_CloudPoint();
 	if (with_Kinect)
 	{
 		draw_Cooresponding_connection();
@@ -331,8 +334,10 @@ void idle() {
 			//cvWaitKey(1);
 		//}
 
+		has_glove = false;
 		for (int i = 0; i < 26; i++)
 		{
+			if (GetSharedMemeryPtr[i] != 0)  has_glove = true;
 			handmodel->init_Params[i] = GetSharedMemeryPtr[i];
 		}
 
@@ -356,7 +361,7 @@ void idle() {
 			load_handmodel_visible_cloud(*Handmodel_visible_cloud, *handmodel);
 			find_correspondences(cloud_correspond);
 
-			handmodel->MoveToDownSampleCorrespondingVertices(itr, pointcloud.pointcloud_downsample, cloud_correspond, handfinder.idxs_image, with_sil);
+			handmodel->MoveToDownSampleCorrespondingVertices(itr, pointcloud.pointcloud_downsample, cloud_correspond, handfinder.idxs_image, with_sil,has_glove);
 
 			itr++;
 		}
@@ -520,173 +525,98 @@ void MixShowResult(cv::Mat input1, cv::Mat input2)
 
 void judge_initParams()
 {
-	float save_0 = handmodel->init_Params[0];
-	float save_1 = handmodel->init_Params[1];
-	float save_2 = handmodel->init_Params[2];
 
-	float save_3 = handmodel->init_Params[3];
-	float save_4 = handmodel->init_Params[4];
-	float save_5 = handmodel->init_Params[5];
+	float merge_Params[26];
+	
+	merge_Params[0] = handmodel->previous_Params[0];
+	merge_Params[1] = handmodel->previous_Params[1];
+	merge_Params[2] = handmodel->previous_Params[2];
+	merge_Params[3] = handmodel->previous_Params[3];
+	merge_Params[4] = handmodel->previous_Params[4];
+	merge_Params[5] = handmodel->previous_Params[5];
 
+	for(int i = 6;i<26;i++)  merge_Params[i] = handmodel->init_Params[i];
+
+	float e_merge, e_glove , e_previous = 0;
+
+	e_glove = Comput_e(handmodel->init_Params);
 
 	if (handmodel->previous_Params[2] != 0)
 	{
-		handmodel->Updata(handmodel->init_Params);
-		load_handmodel_visible_cloud(*Handmodel_visible_cloud, *handmodel);
-		find_correspondences(cloud_correspond);
+		e_merge = Comput_e(merge_Params);
+		e_previous = Comput_e(handmodel->previous_Params);
 
-		int NumofCorrespond = pointcloud.pointcloud_downsample.points.size();
+	/*	cout << "======>> " << e_glove << endl
+			<< "==============>> " << e_merge << endl
+			<< "====================>> " << e_previous << endl;*/
 
-		float e_glove = 0;
-
-		for (int i = 0; i < NumofCorrespond; i++)
+		if (e_merge <= e_previous && e_merge <= e_glove)
 		{
-			float distance = sqrt((pointcloud.pointcloud_downsample.points[i].x - handmodel->Visible_vertices[cloud_correspond[i]].x())*(pointcloud.pointcloud_downsample.points[i].x - handmodel->Visible_vertices[cloud_correspond[i]].x()) +
-				(pointcloud.pointcloud_downsample.points[i].y - handmodel->Visible_vertices[cloud_correspond[i]].y())*(pointcloud.pointcloud_downsample.points[i].y - handmodel->Visible_vertices[cloud_correspond[i]].y()) +
-				(pointcloud.pointcloud_downsample.points[i].z - handmodel->Visible_vertices[cloud_correspond[i]].z())*(pointcloud.pointcloud_downsample.points[i].z - handmodel->Visible_vertices[cloud_correspond[i]].z()));
-
-			e_glove += distance;
-		}
-
-		for (int i = 0; i < handmodel->Visible_vertices_2D.size(); i++)
-		{
-			Eigen::Vector3f pixel_3D_position(handmodel->Visible_vertices[i]);
-			int vert_idx = handmodel->Visible_vertices_index[i];
-			Eigen::Vector2i pixel_2D_position(handmodel->Visible_vertices_2D[i]);
-
-			if ((pixel_2D_position(0) >= 0) &&
-				(pixel_2D_position(0) <= 512 - 1) &&
-				(pixel_2D_position(1) >= 0) &&
-				(pixel_2D_position(1) <= 424 - 1))
-			{
-				Eigen::Vector2i pixel_2D_closest;
-				pixel_2D_closest << handfinder.idxs_image[pixel_2D_position(1) * 512 + pixel_2D_position(0)] % 512, handfinder.idxs_image[pixel_2D_position(1) * 512 + pixel_2D_position(0)] / 512;
-
-				float closest_distance = (pixel_2D_closest(0) - pixel_2D_position(0))* (pixel_2D_closest(0) - pixel_2D_position(0)) + (pixel_2D_closest(1) - pixel_2D_position(1))*(pixel_2D_closest(1) - pixel_2D_position(1));
-
-				e_glove += sqrt(closest_distance);
-			}
-		}
-
-
-
-		handmodel->Updata(handmodel->previous_Params);
-		load_handmodel_visible_cloud(*Handmodel_visible_cloud, *handmodel);
-		find_correspondences(cloud_correspond);
-
-		float e_previous = 0;
-
-		for (int i = 0; i < NumofCorrespond; i++)
-		{
-			float distance = sqrt((pointcloud.pointcloud_downsample.points[i].x - handmodel->Visible_vertices[cloud_correspond[i]].x())*(pointcloud.pointcloud_downsample.points[i].x - handmodel->Visible_vertices[cloud_correspond[i]].x()) +
-				(pointcloud.pointcloud_downsample.points[i].y - handmodel->Visible_vertices[cloud_correspond[i]].y())*(pointcloud.pointcloud_downsample.points[i].y - handmodel->Visible_vertices[cloud_correspond[i]].y()) +
-				(pointcloud.pointcloud_downsample.points[i].z - handmodel->Visible_vertices[cloud_correspond[i]].z())*(pointcloud.pointcloud_downsample.points[i].z - handmodel->Visible_vertices[cloud_correspond[i]].z()));
-
-			e_previous += distance;
-		}
-
-		for (int i = 0; i < handmodel->Visible_vertices_2D.size(); i++)
-		{
-			Eigen::Vector3f pixel_3D_position(handmodel->Visible_vertices[i]);
-			int vert_idx = handmodel->Visible_vertices_index[i];
-			Eigen::Vector2i pixel_2D_position(handmodel->Visible_vertices_2D[i]);
-
-			if ((pixel_2D_position(0) >= 0) &&
-				(pixel_2D_position(0) <= 512 - 1) &&
-				(pixel_2D_position(1) >= 0) &&
-				(pixel_2D_position(1) <= 424 - 1))
-			{
-				Eigen::Vector2i pixel_2D_closest;
-				pixel_2D_closest << handfinder.idxs_image[pixel_2D_position(1) * 512 + pixel_2D_position(0)] % 512, handfinder.idxs_image[pixel_2D_position(1) * 512 + pixel_2D_position(0)] / 512;
-
-				float closest_distance = (pixel_2D_closest(0) - pixel_2D_position(0))* (pixel_2D_closest(0) - pixel_2D_position(0)) + (pixel_2D_closest(1) - pixel_2D_position(1))*(pixel_2D_closest(1) - pixel_2D_position(1));
-
-				e_previous += sqrt(closest_distance);
-			}
-		}
-
-
-		handmodel->init_Params[0] = handmodel->previous_Params[0];
-		handmodel->init_Params[1] = handmodel->previous_Params[1];
-		handmodel->init_Params[2] = handmodel->previous_Params[2];
-
-		handmodel->init_Params[3] = handmodel->previous_Params[3];
-		handmodel->init_Params[4] = handmodel->previous_Params[4];
-		handmodel->init_Params[5] = handmodel->previous_Params[5];
-
-
-		handmodel->Updata(handmodel->init_Params);
-		load_handmodel_visible_cloud(*Handmodel_visible_cloud, *handmodel);
-		find_correspondences(cloud_correspond);
-
-		float e_glove_and_prevoius = 0;
-
-		for (int i = 0; i < NumofCorrespond; i++)
-		{
-			float distance = sqrt((pointcloud.pointcloud_downsample.points[i].x - handmodel->Visible_vertices[cloud_correspond[i]].x())*(pointcloud.pointcloud_downsample.points[i].x - handmodel->Visible_vertices[cloud_correspond[i]].x()) +
-				(pointcloud.pointcloud_downsample.points[i].y - handmodel->Visible_vertices[cloud_correspond[i]].y())*(pointcloud.pointcloud_downsample.points[i].y - handmodel->Visible_vertices[cloud_correspond[i]].y()) +
-				(pointcloud.pointcloud_downsample.points[i].z - handmodel->Visible_vertices[cloud_correspond[i]].z())*(pointcloud.pointcloud_downsample.points[i].z - handmodel->Visible_vertices[cloud_correspond[i]].z()));
-
-			e_glove_and_prevoius += distance;
-		}
-
-		for (int i = 0; i < handmodel->Visible_vertices_2D.size(); i++)
-		{
-			Eigen::Vector3f pixel_3D_position(handmodel->Visible_vertices[i]);
-			int vert_idx = handmodel->Visible_vertices_index[i];
-			Eigen::Vector2i pixel_2D_position(handmodel->Visible_vertices_2D[i]);
-
-			if ((pixel_2D_position(0) >= 0) &&
-				(pixel_2D_position(0) <= 512 - 1) &&
-				(pixel_2D_position(1) >= 0) &&
-				(pixel_2D_position(1) <= 424 - 1))
-			{
-				Eigen::Vector2i pixel_2D_closest;
-				pixel_2D_closest << handfinder.idxs_image[pixel_2D_position(1) * 512 + pixel_2D_position(0)] % 512, handfinder.idxs_image[pixel_2D_position(1) * 512 + pixel_2D_position(0)] / 512;
-
-				float closest_distance = (pixel_2D_closest(0) - pixel_2D_position(0))* (pixel_2D_closest(0) - pixel_2D_position(0)) + (pixel_2D_closest(1) - pixel_2D_position(1))*(pixel_2D_closest(1) - pixel_2D_position(1));
-
-				e_glove_and_prevoius += sqrt(closest_distance);
-			}
-		}
-
-		if (e_glove_and_prevoius < e_previous && e_glove_and_prevoius < e_glove)
-		{
-			for (int i = 0; i < 26; i++)
-			{
-				handmodel->Params[i] = handmodel->init_Params[i];
-				//cout << "using merge Params as init_Params       e_merge is  :  " << e_glove_and_prevoius << "   e_glove  is : " << e_glove << endl;
-			}
-		}
-
-		if (e_previous <e_glove_and_prevoius && e_previous<e_glove)
-		{
-			for (int i = 0; i < 26; i++)
-			{
-				handmodel->Params[i] = handmodel->previous_Params[i];
-				//cout << "using previous Params as init_Params       e_prevoius is  :  " << e_previous << "   e_glove  is : " << e_glove << endl;
-			}
+			for (int i = 0; i < 26; ++i) handmodel->Params[i] = merge_Params[i];
+			//cout << "using merge Params  :  " << e_merge << endl;
 			return;
 		}
 
+		if (e_previous < e_merge && e_previous < e_glove)
+		{
+			for (int i = 0; i < 26; ++i) handmodel->Params[i] = handmodel->previous_Params[i];
+			//cout << "using previous Params  :  " << e_previous << endl;
+			return;
+		}
 	}
 
-
-
-	handmodel->init_Params[0] = save_0;
-	handmodel->init_Params[1] = save_1;
-	handmodel->init_Params[2] = save_2;
-
-	handmodel->init_Params[3] = save_3;
-	handmodel->init_Params[4] = save_4;
-	handmodel->init_Params[5] = save_5;
 
 	for (int i = 0; i < 26; i++)
 	{
 		handmodel->Params[i] = handmodel->init_Params[i];
-		//cout << "using init Params as init_Params"<< endl;
+		//cout << "using init Params :  "<< e_glove <<endl;
 	}
 
 	return;
 
+}
+
+float Comput_e(float* params)
+{
+	
+	handmodel->Updata(params);
+	load_handmodel_visible_cloud(*Handmodel_visible_cloud, *handmodel);
+	find_correspondences(cloud_correspond);
+
+	int NumofCorrespond = cloud_correspond.size();
+
+	Eigen::VectorXf e = Eigen::VectorXf::Zero(3 * NumofCorrespond, 1);
+
+	for (int i = 0; i < NumofCorrespond; i++)
+	{
+		e(i * 3 + 0, 0) = pointcloud.pointcloud_downsample.points[i].x - handmodel->Visible_vertices[cloud_correspond[i]].x();
+		e(i * 3 + 1, 0) = pointcloud.pointcloud_downsample.points[i].y - handmodel->Visible_vertices[cloud_correspond[i]].y();
+		e(i * 3 + 2, 0) = pointcloud.pointcloud_downsample.points[i].z - handmodel->Visible_vertices[cloud_correspond[i]].z();
+	}
+
+	//int Visible_vertex_NUM = handmodel->Visible_vertices_2D.size();
+
+	float e_final = 0;
+
+	for (int i = 0; i < e.rows() / 3; ++i)
+	{
+		e_final += sqrt(e(i * 3 + 0, 0)*e(i * 3 + 0, 0) + e(i * 3 + 1, 0)*e(i * 3 + 1, 0) + e(i * 3 + 2, 0)*e(i * 3 + 2, 0));
+	}
+	//for (int i = 0; i < Visible_vertex_NUM; i++)
+	//{
+	//	Eigen::Vector2i pixel_2D_position(handmodel->Visible_vertices_2D[i]);
+	//	if ((pixel_2D_position(0) >= 0) &&
+	//		(pixel_2D_position(0) <= 512 - 1) &&
+	//		(pixel_2D_position(1) >= 0) &&
+	//		(pixel_2D_position(1) <= 424 - 1))
+	//	{
+	//		Eigen::Vector2i pixel_2D_closest;
+	//		pixel_2D_closest << handfinder.idxs_image[pixel_2D_position(1) * 512 + pixel_2D_position(0)] % 512, handfinder.idxs_image[pixel_2D_position(1) * 512 + pixel_2D_position(0)] / 512;
+	//		float closest_distance = (pixel_2D_closest(0) - pixel_2D_position(0))* (pixel_2D_closest(0) - pixel_2D_position(0)) + (pixel_2D_closest(1) - pixel_2D_position(1))*(pixel_2D_closest(1) - pixel_2D_position(1));
+	//		e_2D += sqrt(closest_distance);
+	//	}
+	//}
+
+
+	return e_final;
 }

@@ -81,9 +81,9 @@ public:
 	/// label_image[i] > mask_th decides what data is.
 	void exec(unsigned char* label_image, int mask_th = 125)
 	{
-		//        #pragma omp parallel
+		 //#pragma omp parallel
 		{
-			//            #pragma omp for
+			//#pragma omp for
 			for (int i = 0; i < width*height; ++i)
 			{
 				if (label_image[i] < mask_th)
@@ -142,7 +142,7 @@ public:
 			}
 
 			//--- Second PASS (columns)
-			//            #pragma omp for
+			//#pragma omp for
 			for (int col = 0; col<width; ++col)
 			{
 				unsigned int k = 0;

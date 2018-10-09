@@ -1036,7 +1036,7 @@ Eigen::MatrixXf HandModel::Compute_one_Vertex_Jacobain(int index)
 }
 
 
-void HandModel::MoveToDownSampleCorrespondingVertices(int itr,pcl::PointCloud<pcl::PointXYZ>& p, std::vector<int>& cor,int *idx_img, bool with_sil)
+void HandModel::MoveToDownSampleCorrespondingVertices(int itr,pcl::PointCloud<pcl::PointXYZ>& p, std::vector<int>& cor,int *idx_img, bool with_sil,bool has_glove)
 {
 	int NumofCorrespond = p.points.size();
 	Eigen::VectorXf e = Eigen::VectorXf::Zero(3 * NumofCorrespond, 1);
@@ -1057,7 +1057,7 @@ void HandModel::MoveToDownSampleCorrespondingVertices(int itr,pcl::PointCloud<pc
 	Eigen::MatrixXf J_sil = Compute_Silhouette_Limited(e_sil, idx_img);
 
 	Eigen::VectorXf e_limit;
-	Eigen::MatrixXf J_limit = Compute_joint_Limited(e_limit);
+	Eigen::MatrixXf J_limit = Compute_joint_Limited(e_limit,has_glove);
 
 	int omiga_limit = 50;
 
@@ -1102,13 +1102,27 @@ void HandModel::MoveToDownSampleCorrespondingVertices(int itr,pcl::PointCloud<pc
 
 	if (itr > 15)
 	{
+		for (int i = 0; i < NumberofParams; i++) previous_Params[i] = Params[i];
 		Solved = true;
-		float e_final = e.norm() + e_sil.norm();
+		float e_3D = 0;
+		float e_2D = 0;
+
+		for (int i = 0; i < e.rows()/3; ++i)
+		{
+			e_3D += sqrt(e(i * 3 + 0, 0)*e(i * 3 + 0, 0) + e(i * 3 + 1, 0)*e(i * 3 + 1, 0) + e(i * 3 + 2, 0)*e(i * 3 + 2, 0));
+		}
+
+		for (int i = 0; i < e_sil.rows()/2; ++i)
+		{
+			e_2D += sqrt(e_sil(i * 2 + 0, 0)*e_sil(i * 2 + 0, 0) + e_sil(i * 2 + 1, 0)*e_sil(i * 2 + 1, 0));
+		}
+
+		float e_final = e_3D + e_2D;
 		cout << " final e is : " << e_final << endl
 			<< "---------------¡· e_3D  is : " << e.norm() << endl
 			<< "---------------¡· e_2D  is : " << e_sil.norm() << endl;
 
-		if (e_final < 200)
+		if (e_final < 3000)
 		{
 			this->track_failure = false;
 		}
@@ -1150,34 +1164,57 @@ void HandModel::MoveToDownSampleCorrespondingVertices(int itr,pcl::PointCloud<pc
 }
 
 
-MatrixXf HandModel::Compute_joint_Limited(Eigen::VectorXf & e_limit)
+MatrixXf HandModel::Compute_joint_Limited(Eigen::VectorXf & e_limit, bool has_glove)
 {
 	MatrixXf J_limit = MatrixXf::Zero(26, 26);
 
 	e_limit = Eigen::VectorXf::Zero(26, 1);
 
 
-	for (int i = 6; i < NumberofParams; i++)
+	if (has_glove)
 	{
-		float q_max = (init_Params[i] + 20) > ParamsUpperBound[i] ? ParamsUpperBound[i] : (init_Params[i] + 20);
-		float q_min = (init_Params[i] - 20) < ParamsLowerBound[i] ? ParamsLowerBound[i] : (init_Params[i] - 20);
-		if (Params[i] > q_max) {
-			//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
-			e_limit(i) = (q_max - Params[i]) - std::numeric_limits<float>::epsilon();
-			J_limit(i, i) = 1;
-		}
-		else if (Params[i] < q_min) {
-			//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
-			e_limit(i) = (q_min - Params[i]) + std::numeric_limits<float>::epsilon();
-			J_limit(i, i) = 1;
-		}
-		else {
-			J_limit(i, i) = 0;
-			e_limit(i) = 0;
+		for (int i = 6; i < NumberofParams; i++)
+		{
+			float q_max = (init_Params[i] + 20) > ParamsUpperBound[i] ? ParamsUpperBound[i] : (init_Params[i] + 20);
+			float q_min = (init_Params[i] - 20) < ParamsLowerBound[i] ? ParamsLowerBound[i] : (init_Params[i] - 20);
+			if (Params[i] > q_max) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_max - Params[i]) - std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else if (Params[i] < q_min) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_min - Params[i]) + std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else {
+				J_limit(i, i) = 0;
+				e_limit(i) = 0;
+			}
 		}
 	}
-
-
+	else
+	{
+		for (int i = 6; i < NumberofParams; i++)
+		{
+			float q_max = ParamsUpperBound[i];
+			float q_min = ParamsLowerBound[i];
+			if (Params[i] > q_max) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_max - Params[i]) - std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else if (Params[i] < q_min) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_min - Params[i]) + std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else {
+				J_limit(i, i) = 0;
+				e_limit(i) = 0;
+			}
+		}
+	}
 	return J_limit;
 }
 
