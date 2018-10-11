@@ -195,6 +195,36 @@ void draw_Mesh()
 		glEnd();
 	}
 }
+void draw_WireHand()
+{
+	glDisable(GL_LIGHT0);
+	glDisable(GL_LIGHTING);
+	{
+		for (int i = 0; i < handmodel->NumofFaces; i++)
+		{
+			glLineWidth(1);
+			glColor3f(0.4, 0.8, 0.3);
+			glBegin(GL_LINES);
+			glVertex3f(handmodel->vertices_update_(handmodel->FaceIndex(i, 0), 0), handmodel->vertices_update_(handmodel->FaceIndex(i, 0), 1), handmodel->vertices_update_(handmodel->FaceIndex(i, 0), 2));
+			glVertex3f(handmodel->vertices_update_(handmodel->FaceIndex(i, 1), 0), handmodel->vertices_update_(handmodel->FaceIndex(i, 1), 1), handmodel->vertices_update_(handmodel->FaceIndex(i, 1), 2));
+			glEnd();
+
+			glLineWidth(1);
+			glColor3f(0.4, 0.8, 0.3);
+			glBegin(GL_LINES);
+			glVertex3f(handmodel->vertices_update_(handmodel->FaceIndex(i, 0), 0), handmodel->vertices_update_(handmodel->FaceIndex(i, 0), 1), handmodel->vertices_update_(handmodel->FaceIndex(i, 0), 2));
+			glVertex3f(handmodel->vertices_update_(handmodel->FaceIndex(i, 2), 0), handmodel->vertices_update_(handmodel->FaceIndex(i, 2), 1), handmodel->vertices_update_(handmodel->FaceIndex(i, 2), 2));
+			glEnd();
+
+			glLineWidth(1);
+			glColor3f(0.4, 0.8, 0.3);
+			glBegin(GL_LINES);
+			glVertex3f(handmodel->vertices_update_(handmodel->FaceIndex(i, 1), 0), handmodel->vertices_update_(handmodel->FaceIndex(i, 1), 1), handmodel->vertices_update_(handmodel->FaceIndex(i, 1), 2));
+			glVertex3f(handmodel->vertices_update_(handmodel->FaceIndex(i, 2), 0), handmodel->vertices_update_(handmodel->FaceIndex(i, 2), 1), handmodel->vertices_update_(handmodel->FaceIndex(i, 2), 2));
+			glEnd();
+		}
+	}
+}
 void draw_Vertex()
 {
 	glDisable(GL_LIGHT0);
@@ -209,15 +239,15 @@ void draw_Vertex()
 }
 void draw_skeleton()
 {
-	glDisable(GL_LIGHT0);
-	glDisable(GL_LIGHTING);
 	//画骨架
 	for (int i = 0; i < handmodel->NumofJoints; i++) {
 		//画点开始 
+		glEnable(GL_LIGHTING);
+		glEnable(GL_LIGHT0);
 		glColor3f(1.0, 0.0, 0.0);
 		glPushMatrix();
 		glTranslatef(handmodel->Joints[i].CorrespondingPosition(0), handmodel->Joints[i].CorrespondingPosition(1), handmodel->Joints[i].CorrespondingPosition(2));
-		glutSolidSphere(5, 31, 10);
+		glutSolidSphere(4, 10, 10);
 		glPopMatrix();
 
 		//画点结束，使用push和popmatrix是因为保证每个关节点的偏移都是相对于全局坐标中心点做的变换。
@@ -225,6 +255,8 @@ void draw_skeleton()
 		int parent_joint_index = handmodel->Joints[i].parent_joint_index;
 		//画线开始  //不画wrist到arm的那条线
 		if (parent_joint_index != -1) {
+			glDisable(GL_LIGHT0);
+			glDisable(GL_LIGHTING);
 			glLineWidth(5);
 			glColor3f(0.0, 1.0, 0);
 			glBegin(GL_LINES);
@@ -273,6 +305,75 @@ void draw_Cooresponding_connection()
 		glEnd();
 	}
 }
+
+void draw_Global_Coordinate()
+{
+	glDisable(GL_LIGHT0);
+	glDisable(GL_LIGHTING);
+	//x
+	glLineWidth(5);
+	glColor3f(1.0, 0.0, 0);
+	glBegin(GL_LINES);
+	glVertex3f(0,0,0);
+	glVertex3f(100,0,0);
+	glEnd();
+	//y
+	glLineWidth(5);
+	glColor3f(0.0, 1.0, 0);
+	glBegin(GL_LINES);
+	glVertex3f(0, 0, 0);
+	glVertex3f(0, 100, 0);
+	glEnd();
+	//z
+	glLineWidth(5);
+	glColor3f(0.0, 0.0, 1.0);
+	glBegin(GL_LINES);
+	glVertex3f(0, 0, 0);
+	glVertex3f(0, 0, 100);
+	glEnd();
+}
+
+void draw_Collision()
+{
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
+	for (int i = 0; i < handmodel->Collision_sphere.size(); i++)
+	{
+		glColor3f(1.0, 0.0, 0.0);
+		glPushMatrix();
+		glTranslatef(handmodel->Collision_sphere[i].updata_Position(0), handmodel->Collision_sphere[i].updata_Position(1), handmodel->Collision_sphere[i].updata_Position(2));
+		glutSolidSphere(handmodel->Collision_sphere[i].updata_radius, 10, 10);
+		glPopMatrix();
+	}
+}
+
+void show_Collision()
+{
+	glDisable(GL_LIGHT0);
+	glDisable(GL_LIGHTING);
+	int NUMofCollision = handmodel->Collision_sphere.size();
+	for (int i = 0; i < NUMofCollision; ++i)
+	{
+		for (int j = 0; j < NUMofCollision; ++j)
+		{
+			if (handmodel->Collision_Judge_Matrix(i, j) == 1)
+			{
+				glColor3f(1.0, 1.0, 0.0);
+				glPushMatrix();
+				glTranslatef(handmodel->Collision_sphere[i].updata_Position(0), handmodel->Collision_sphere[i].updata_Position(1), handmodel->Collision_sphere[i].updata_Position(2));
+				glutSolidSphere(handmodel->Collision_sphere[i].updata_radius, 10, 10);
+				glPopMatrix();
+
+				glColor3f(1.0, 1.0, 0.0);
+				glPushMatrix();
+				glTranslatef(handmodel->Collision_sphere[j].updata_Position(0), handmodel->Collision_sphere[j].updata_Position(1), handmodel->Collision_sphere[j].updata_Position(2));
+				glutSolidSphere(handmodel->Collision_sphere[j].updata_radius, 10, 10);
+				glPopMatrix();
+			}
+		}
+	}
+}
+
 void draw() {
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -282,7 +383,7 @@ void draw() {
 	control.gx = handmodel->GlobalPosition(0);
 	control.gy = handmodel->GlobalPosition(1);
 	control.gz = handmodel->GlobalPosition(2);
-	double r = 200;
+	double r = 180;
 	double x = r*sin(control.roty)*cos(control.rotx);
 	double y = r*sin(control.roty)*sin(control.rotx);
 	double z = r*cos(control.roty);
@@ -290,13 +391,16 @@ void draw() {
 	gluLookAt(x + control.gx, y + control.gy, z + control.gz, control.gx, control.gy, control.gz, 0.0, 1.0, 0.0);//个人理解最开始是看向-z的，之后的角度是在global中心上叠加的，所以要加
 
 
-	draw_Mesh();
+	if (show_mesh)  draw_Mesh();
+	else draw_WireHand();
+
 	draw_skeleton();
 	draw_CloudPoint();
-	if (with_Kinect)
-	{
-		draw_Cooresponding_connection();
-	}
+	if (with_Kinect)  draw_Cooresponding_connection();
+	draw_Global_Coordinate();
+
+	draw_Collision();
+	show_Collision();
 
 	glFlush();
 	glutSwapBuffers();
@@ -350,11 +454,11 @@ void idle() {
 
 	}
 
+	float ends_clock0 = clock();
+	//cout << "fetching Time : " << (double)(ends_clock0 - start) *1000/ CLK_TCK << endl;
 
 	if (with_Kinect)
 	{
-		//a function to judge init_Params from glovedata or form previous_Params
-		//judge_initParams();
 
 		while (!handmodel->Solved)
 		{
@@ -372,13 +476,12 @@ void idle() {
 		}
 	}
 
-
-	MixShowResult(handmodel->Generate_handimg(), handfinder.sensor_hand_silhouette);
+	//MixShowResult(handmodel->Generate_handimg(), handfinder.sensor_hand_silhouette);
 
 	itr = 0;
 	handmodel->Solved = false;
 	ends_clock = clock();
-	//cout << "Running Time : " << (double)(ends_clock - start) / CLOCKS_PER_SEC << endl;
+	//cout << "Running Time : " << (double)(ends_clock - start)*1000 / CLK_TCK << endl;
 
 	glutPostRedisplay();
 }

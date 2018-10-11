@@ -10,6 +10,7 @@
 #include <pcl/kdtree/kdtree_flann.h>
 #include<queue>
 #include<math.h>
+#include<omp.h>
 #define PI 3.1415926
 
 
@@ -64,6 +65,17 @@ public:
 	}
 };
 
+struct Collision
+{
+	int id;
+	int adjscent_id[2];
+	Eigen::Vector4f init_Position;    //局部坐标系
+	Eigen::Vector4f updata_Position;    //世界坐标系
+
+	float init_radius;
+	float updata_radius;
+	int joint_index;
+};
 
 class HandModel
 {
@@ -96,7 +108,7 @@ public:
 	int NumberofParams;
 
 
-	Vector3f Hand_scale;
+	Eigen::Vector3f Hand_scale;
 	float *Params;
 	float *init_Params;
 	float *previous_Params;
@@ -105,6 +117,11 @@ public:
 	int* ParamsLowerBound;
 
 	Eigen::Vector4f GlobalPosition;
+
+	//collision related
+	vector<Collision> Collision_sphere;
+	Eigen::MatrixXi adjacency_matrix;
+	Eigen::MatrixXi Collision_Judge_Matrix;
 
 	HandModel(Camera *camera_);
 	~HandModel() { delete ParamsLowerBound; delete ParamsUpperBound; delete Params; }
@@ -158,7 +175,16 @@ private:
 
 	MatrixXf Compute_Temporal_Limited(Eigen::VectorXf & e_limit,bool first_order);
 
-
+	MatrixXf Compute_Damping_Limited();
+	//collision
+	void set_collosion();
+	void updata_collosion();
+	void create_adjacency_matrix();
+	int Judge_Collision();
+	std::vector<std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f>>> create_distance_matrix();
+	std::pair<Eigen::Vector3f, Eigen::Vector3f>  Collision_to_Collision_distance(Collision& a, Collision&b);
+	Eigen::MatrixXf Compute_one_CollisionPoint_Jacobian(Collision& a, Eigen::Vector3f& point);
+	Eigen::MatrixXf Compute_Collision_Limit(Eigen::VectorXf& e_limit);
 private:
 	void normalize(float axis[3]) {
 		float sum = sqrt(axis[0] * axis[0] + axis[1] * axis[1] + axis[2] * axis[2]);
