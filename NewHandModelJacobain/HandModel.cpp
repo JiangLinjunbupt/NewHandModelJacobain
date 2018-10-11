@@ -92,6 +92,8 @@ void HandModel::SetParamsBound()
 HandModel::HandModel(Camera *camera_):camera(camera_)
 {
 	NumofJoints = 22;
+	Joint_matrix = Eigen::MatrixXf::Zero(NumofJoints, 3);
+
 	Joints = new Joint_handmodel[22];
 	//wrist
 	{
@@ -626,6 +628,14 @@ void HandModel::Updata_Joints()
 	{
 		Joints[i].CorrespondingPosition << Joints[i].global*Joints[i].local.inverse()*Joints[i].GlobalInitPosition + GlobalPosition - handbase;
 	}
+
+	Joint_matrix.setZero();
+	for (int i = 0; i < NumofJoints; ++i)
+	{
+		Joint_matrix(i, 0) = Joints[i].CorrespondingPosition(0);
+		Joint_matrix(i, 1) = Joints[i].CorrespondingPosition(1);
+		Joint_matrix(i, 2) = Joints[i].CorrespondingPosition(2);
+	}
 }
 
 void HandModel::Updata_axis()
@@ -746,14 +756,6 @@ void HandModel::Updata(float* params)
 	Updata_Vertics();        
 
 	Compute_normal_And_visibel_vertices();    
-
-	Joint_matrix = Eigen::MatrixXf::Zero(NumofJoints, 3);
-	for (int i = 0; i < NumofJoints; ++i)
-	{
-		Joint_matrix(i, 0) = Joints[i].CorrespondingPosition(0);
-		Joint_matrix(i, 1) = Joints[i].CorrespondingPosition(1);
-		Joint_matrix(i, 2) = Joints[i].CorrespondingPosition(2);
-	}
 }
 
 
@@ -1078,34 +1080,18 @@ void HandModel::MoveToDownSampleCorrespondingVertices(int itr,pcl::PointCloud<pc
 	Eigen::VectorXf e_sil;
 	Eigen::MatrixXf J_sil = Compute_Silhouette_Limited(e_sil, idx_img);
 
-	//joint Limited
-	int omiga_joint_limited = 50;
-	Eigen::VectorXf e_limit;
-	Eigen::MatrixXf J_limit = Compute_joint_Limited(e_limit,has_glove);
-
-	//collision Limied
-	int omiga_collision = 50;
-	Eigen::VectorXf e_col;
-	Eigen::MatrixXf J_col = Compute_Collision_Limit(e_col);
-
-	//Damping
-	Eigen::MatrixXf D = Compute_Damping_Limited();
-
-
 
 	if (itr > 15)
 	{
-		for (int i = 0; i < NumberofParams; i++) previous_Params[i] = Params[i];
 		Solved = true;
 		float e_3D = 0;
 		float e_2D = 0;
 
-		for (int i = 0; i < e.rows()/3; ++i)
+		for (int i = 0; i < e.rows() / 3; ++i)
 		{
 			e_3D += sqrt(e(i * 3 + 0, 0)*e(i * 3 + 0, 0) + e(i * 3 + 1, 0)*e(i * 3 + 1, 0) + e(i * 3 + 2, 0)*e(i * 3 + 2, 0));
 		}
-
-		for (int i = 0; i < e_sil.rows()/2; ++i)
+		for (int i = 0; i < e_sil.rows() / 2; ++i)
 		{
 			e_2D += sqrt(e_sil(i * 2 + 0, 0)*e_sil(i * 2 + 0, 0) + e_sil(i * 2 + 1, 0)*e_sil(i * 2 + 1, 0));
 		}
@@ -1115,13 +1101,35 @@ void HandModel::MoveToDownSampleCorrespondingVertices(int itr,pcl::PointCloud<pc
 			<< "---------------¡· e_3D  is : " << e.norm() << endl
 			<< "---------------¡· e_2D  is : " << e_sil.norm() << endl;
 
-		if (e_final < 4000)
+		if (e_final < 3000)
 		{
 			this->track_failure = false;
+
+			//save Params as previous Params
+			for (int i = 0; i < NumberofParams; ++i) previous_Params[i] = Params[i];
+
+			//save Joint Position as temporal information
+			if (temporal_position.size() == 2)
+			{
+				temporal_position.pop();
+				temporal_position.push(Joint_matrix);
+			}
+			else
+			{
+				temporal_position.push(Joint_matrix);
+			}
 		}
 		else
 		{
 			this->track_failure = true;
+
+			//if track fail
+			//reset previous_params
+			for (int i = 0; i < NumberofParams; ++i) previous_Params[i] = 0;
+
+			//reset temporal information
+			int temporal_size = temporal_position.size();
+			for (int i = 0; i < temporal_size; ++i) temporal_position.pop();
 		}
 
 		return;
@@ -1132,6 +1140,31 @@ void HandModel::MoveToDownSampleCorrespondingVertices(int itr,pcl::PointCloud<pc
 	}
 
 
+	//joint Limited
+	int omiga_joint_limited = 50;
+	Eigen::VectorXf e_limit;
+	Eigen::MatrixXf J_limit = Compute_joint_Limited(e_limit,has_glove);
+
+	//collision Limied
+	int omiga_collision = 50;
+	Eigen::VectorXf e_col;
+	Eigen::MatrixXf J_col = Compute_Collision_Limit(e_col);
+
+	//Temporal Limited
+	int omiga_Temporal_1 = 1;
+	int omiga_Temporal_2 = 1;
+	Eigen::VectorXf e_temporal_1;
+	Eigen::MatrixXf J_temporal_1 = Compute_Temporal_Limited(e_temporal_1,true);
+
+	Eigen::VectorXf e_temporal_2;
+	Eigen::MatrixXf J_temporal_2 = Compute_Temporal_Limited(e_temporal_2,false);
+
+
+	//Damping
+	Eigen::MatrixXf D = Compute_Damping_Limited();
+
+	
+
 	Eigen::VectorXf dAngles = Eigen::VectorXf::Zero(NumberofParams, 1);
 
 
@@ -1139,14 +1172,18 @@ void HandModel::MoveToDownSampleCorrespondingVertices(int itr,pcl::PointCloud<pc
 	{
 		MatrixXf JtJ = omiga_3D*Jt*J
 			+ omiga_2D*J_sil.transpose()*J_sil
-			+ omiga_joint_limited*J_limit.transpose()*J_limit 
+			+ omiga_joint_limited*J_limit.transpose()*J_limit
 			+ omiga_collision*J_col.transpose()*J_col
+			+ omiga_Temporal_1*J_temporal_1.transpose()*J_temporal_1
+			+ omiga_Temporal_2*J_temporal_2.transpose()*J_temporal_2
 			+ D;
 
 		VectorXf JTe = omiga_3D*Jt*e
 			+ omiga_2D*J_sil.transpose()*e_sil
 			+ omiga_joint_limited*J_limit.transpose()*e_limit
-			+ omiga_collision*J_col.transpose()*e_col;
+			+ omiga_collision*J_col.transpose()*e_col
+			+ omiga_Temporal_1*J_temporal_1.transpose()*e_temporal_1
+			+ omiga_Temporal_2*J_temporal_2.transpose()*e_temporal_2;
 
 		dAngles = JtJ.colPivHouseholderQr().solve(JTe);
 	}
@@ -1155,11 +1192,15 @@ void HandModel::MoveToDownSampleCorrespondingVertices(int itr,pcl::PointCloud<pc
 		MatrixXf JtJ = omiga_3D*Jt*J
 			+ omiga_joint_limited*J_limit.transpose()*J_limit 
 			+ omiga_collision*J_col.transpose()*J_col
+			+ omiga_Temporal_1*J_temporal_1.transpose()*J_temporal_1
+			+ omiga_Temporal_2*J_temporal_2.transpose()*J_temporal_2
 			+ D;
 
 		VectorXf JTe = omiga_3D*Jt*e
 			+ omiga_joint_limited*J_limit.transpose()*e_limit
-			+ omiga_collision*J_col.transpose()*e_col;
+			+ omiga_collision*J_col.transpose()*e_col
+			+ omiga_Temporal_1*J_temporal_1.transpose()*e_temporal_1
+			+ omiga_Temporal_2*J_temporal_2.transpose()*e_temporal_2;
 
 		dAngles = JtJ.colPivHouseholderQr().solve(JTe);
 	}
@@ -1307,7 +1348,6 @@ MatrixXf HandModel::Compute_Temporal_Limited(Eigen::VectorXf & e_limit,bool firs
 {
 	Eigen::Matrix<float, 3*22, 26> J_Tem = MatrixXf::Zero(3*22, 26); 
 	e_limit = Eigen::VectorXf::Zero(3*22, 1);
-
 	if (temporal_position.size() == 2)
 	{
 		for (int i = 0; i < NumofJoints; i++)
@@ -1315,14 +1355,14 @@ MatrixXf HandModel::Compute_Temporal_Limited(Eigen::VectorXf & e_limit,bool firs
 			if (first_order)
 			{
 				e_limit(i * 3 + 0) = temporal_position.back()(i, 0) - Joints[i].CorrespondingPosition(0);
-				e_limit(i * 3 + 1) = temporal_position.back()(i, 0) - Joints[i].CorrespondingPosition(1);
-				e_limit(i * 3 + 2) = temporal_position.back()(i, 0) - Joints[i].CorrespondingPosition(2);
+				e_limit(i * 3 + 1) = temporal_position.back()(i, 1) - Joints[i].CorrespondingPosition(1);
+				e_limit(i * 3 + 2) = temporal_position.back()(i, 2) - Joints[i].CorrespondingPosition(2);
 			}
 			else
 			{
 				e_limit(i * 3 + 0) = 2 * temporal_position.back()(i, 0) - temporal_position.front()(i, 0) - Joints[i].CorrespondingPosition(0);
-				e_limit(i * 3 + 1) = 2 * temporal_position.back()(i, 0) - temporal_position.front()(i, 0) - Joints[i].CorrespondingPosition(1);
-				e_limit(i * 3 + 2) = 2 * temporal_position.back()(i, 0) - temporal_position.front()(i, 0) - Joints[i].CorrespondingPosition(2);
+				e_limit(i * 3 + 1) = 2 * temporal_position.back()(i, 1) - temporal_position.front()(i, 1) - Joints[i].CorrespondingPosition(1);
+				e_limit(i * 3 + 2) = 2 * temporal_position.back()(i, 2) - temporal_position.front()(i, 2) - Joints[i].CorrespondingPosition(2);
 			}
 
 
@@ -1378,6 +1418,7 @@ MatrixXf HandModel::Compute_Damping_Limited()
 	return D;
 
 }
+
 //collision related
 void HandModel::set_collosion()
 {
