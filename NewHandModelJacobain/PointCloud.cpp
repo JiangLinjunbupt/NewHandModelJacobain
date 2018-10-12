@@ -40,20 +40,26 @@ void PointCloud::DepthMatToPointCloud(cv::Mat& depth, HandFinder* hanfinder)
 
 void PointCloud::Filter_visible_cloud()
 {
-	pcl::StatisticalOutlierRemoval<pcl::PointXYZ> sor;
-	sor.setInputCloud(pointcloud_from_depth.makeShared());
-	sor.setMeanK(100);
-	sor.setStddevMulThresh(1.0);
-	sor.filter(pointcloud_filtered);
+	if (pointcloud_from_depth.points.size() > 0)
+	{
+		pcl::StatisticalOutlierRemoval<pcl::PointXYZ> sor;
+		sor.setInputCloud(pointcloud_from_depth.makeShared());
+		sor.setMeanK(100);
+		sor.setStddevMulThresh(1.0);
+		sor.filter(pointcloud_filtered);
+	}
 }
 
 
 void PointCloud::downSample()
 {
-	pcl::VoxelGrid<pcl::PointXYZ> sor;  //体素栅格下采样对象
-	sor.setInputCloud(pointcloud_filtered.makeShared());             //原始点云
-	sor.setLeafSize(8.0f, 8.0f, 8.0f);    // 设置采样体素大小
-	sor.filter(pointcloud_downsample);        //保存
+	if (pointcloud_filtered.points.size())
+	{
+		pcl::VoxelGrid<pcl::PointXYZ> sor;  //体素栅格下采样对象
+		sor.setInputCloud(pointcloud_filtered.makeShared());             //原始点云
+		sor.setLeafSize(8.0f, 8.0f, 8.0f);    // 设置采样体素大小
+		sor.filter(pointcloud_downsample);        //保存
 
-	//std::cout << "after filter ,the point cloud size is : " << after_cloud.points.size() << std::endl;
+		//std::cout << "after filter ,the point cloud size is : " << after_cloud.points.size() << std::endl;
+	}
 }

@@ -643,12 +643,14 @@ void judge_initParams()
 	float e_merge, e_glove , e_previous = 0;
 
 	e_glove = Comput_e(handmodel->init_Params);
+	e_merge = Comput_e(merge_Params);
+	e_previous = Comput_e(handmodel->previous_Params);
 
 	if (handmodel->previous_Params[2] != 0)
 	{
-		e_merge = Comput_e(merge_Params);
+		/*e_merge = Comput_e(merge_Params);
 		e_previous = Comput_e(handmodel->previous_Params);
-
+*/
 	/*	cout << "======>> " << e_glove << endl
 			<< "==============>> " << e_merge << endl
 			<< "====================>> " << e_previous << endl;*/
