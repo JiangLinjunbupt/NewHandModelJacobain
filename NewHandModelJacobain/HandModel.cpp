@@ -383,9 +383,10 @@ HandModel::HandModel(Camera *camera_):camera(camera_)
 
 	GlobalPosition << 0, 0, 0, 0;
 
-	load_vertices(".\\model\\new_new_vertes.txt");
-	load_faces(".\\model\\newFaces.txt");
-	load_weight(".\\model\\newWeights.txt");
+
+	load_vertices("F:\\NewHandModelJacobain\\NewHandModelJacobain\\model\\new_new_vertes.txt");
+	load_faces("F:\\NewHandModelJacobain\\NewHandModelJacobain\\model\\newFaces.txt");
+	load_weight("F:\\NewHandModelJacobain\\NewHandModelJacobain\\model\\newWeights.txt");
 
 	outputImage = cv::Mat::zeros(424, 512, CV_8UC1);
 
@@ -1123,6 +1124,7 @@ void HandModel::MoveToDownSampleCorrespondingVertices(int itr,pcl::PointCloud<pc
 		{
 			this->track_failure = true;
 
+			for (int i = 0; i < NumberofParams; ++i) Params[i] = init_Params[i];
 			//if track fail
 			//reset previous_params
 			for (int i = 0; i < NumberofParams; ++i) previous_Params[i] = 0;

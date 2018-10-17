@@ -50,6 +50,11 @@ float *GetSharedMemeryPtr;
 float *GetGloveData = new float[26];
 
 
+HANDLE hMapFile_out;
+LPCTSTR pBuf_out;
+TCHAR szName_out[] = TEXT("Global\\MyFileMappingObject_out");    //指向同一块共享内存的名字
+
+
 pcl::PointCloud<pcl::PointXYZ>::Ptr Handmodel_visible_cloud(new pcl::PointCloud<pcl::PointXYZ>);
 std::vector<int> cloud_correspond;
 int itr = 0;
@@ -470,12 +475,11 @@ void idle() {
 			itr++;
 		}
 
-		if (handmodel->track_failure)
-		{
-			handmodel->Updata(handmodel->init_Params);
-		}
+		handmodel->Updata(handmodel->Params);
 	}
 
+
+	memcpy((float*)pBuf_out, handmodel->Params, sizeof(float) * 26);
 	//MixShowResult(handmodel->Generate_handimg(), handfinder.sensor_hand_silhouette);
 
 	itr = 0;
@@ -540,6 +544,39 @@ int main(int argc, char** argv)
 #pragma endregion SharedMemery
 
 
+
+#pragma region SharedMemery_out
+	hMapFile_out = CreateFileMapping(
+		INVALID_HANDLE_VALUE,    // use paging file
+		NULL,                    // default security
+		PAGE_READWRITE,          // read/write access
+		0,                       // maximum object size (high-order DWORD)
+		BUF_SIZE,                // maximum object size (low-order DWORD)
+		szName_out);                 // name of mapping object
+
+	if (hMapFile_out == NULL)
+	{
+		_tprintf(TEXT("Could not create file mapping object (%d).\n"),
+			GetLastError());
+		return 1;
+	}
+	pBuf_out = (LPTSTR)MapViewOfFile(hMapFile_out,   // handle to map object
+		FILE_MAP_ALL_ACCESS, // read/write permission
+		0,
+		0,
+		BUF_SIZE);
+
+	if (pBuf_out == NULL)
+	{
+		_tprintf(TEXT("Could not map view of file (%d).\n"),
+			GetLastError());
+
+		CloseHandle(hMapFile_out);
+
+		return 1;
+	}
+#pragma endregion SharedMemery_out
+
 	HRESULT hr = mykinect.InitializeDefaultSensor();
 	pointcloud.camera = camera;
 
@@ -549,6 +586,8 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
+
+#pragma region OpenGl_init
 	glutInit(&argc, argv);
 
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
@@ -570,6 +609,11 @@ int main(int argc, char** argv)
 	initGL(800, 600);
 
 	glutMainLoop();
+
+#pragma endregion OpenGl_init
+
+
+	system("pause");
 
 	return 0;
 
@@ -657,16 +701,14 @@ void judge_initParams()
 
 		if (e_merge <= e_previous && e_merge <= e_glove)
 		{
-			for (int i = 0; i < 26; ++i) handmodel->Params[i] = merge_Params[i];
+			for (int i = 0; i < 26; ++i) handmodel->init_Params[i] = merge_Params[i];
 			//cout << "using merge Params  :  " << e_merge << endl;
-			return;
 		}
 
 		if (e_previous < e_merge && e_previous < e_glove)
 		{
-			for (int i = 0; i < 26; ++i) handmodel->Params[i] = handmodel->previous_Params[i];
+			for (int i = 0; i < 26; ++i) handmodel->init_Params[i] = handmodel->previous_Params[i];
 			//cout << "using previous Params  :  " << e_previous << endl;
-			return;
 		}
 	}
 
