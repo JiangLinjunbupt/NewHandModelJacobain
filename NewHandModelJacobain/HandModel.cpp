@@ -384,9 +384,9 @@ HandModel::HandModel(Camera *camera_):camera(camera_)
 	GlobalPosition << 0, 0, 0, 0;
 
 
-	load_vertices("F:\\NewHandModelJacobain\\NewHandModelJacobain\\model\\new_new_vertes.txt");
-	load_faces("F:\\NewHandModelJacobain\\NewHandModelJacobain\\model\\newFaces.txt");
-	load_weight("F:\\NewHandModelJacobain\\NewHandModelJacobain\\model\\newWeights.txt");
+	load_vertices(".\\model\\new_new_vertes.txt");
+	load_faces(".\\model\\newFaces.txt");
+	load_weight(".\\model\\newWeights.txt");
 
 	outputImage = cv::Mat::zeros(424, 512, CV_8UC1);
 
@@ -1153,8 +1153,8 @@ void HandModel::MoveToDownSampleCorrespondingVertices(int itr,pcl::PointCloud<pc
 	Eigen::MatrixXf J_col = Compute_Collision_Limit(e_col);
 
 	//Temporal Limited
-	int omiga_Temporal_1 = 1;
-	int omiga_Temporal_2 = 1;
+	int omiga_Temporal_1 = 0.1;
+	int omiga_Temporal_2 = 0.1;
 	Eigen::VectorXf e_temporal_1;
 	Eigen::MatrixXf J_temporal_1 = Compute_Temporal_Limited(e_temporal_1,true);
 
