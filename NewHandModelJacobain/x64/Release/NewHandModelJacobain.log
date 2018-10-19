@@ -1,36 +1,4 @@
 ﻿cl : 命令行 warning D9002: 忽略未知选项“/arch:SSE2”
-  Camera.cpp
-  HandFinder.cpp
-F:\opencv3.2\opencv\build\include\opencv2/core/mat.hpp(2586): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
-F:\opencv3.2\opencv\build\include\opencv2/core/persistence.hpp : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
-F:\opencv3.2\opencv\build\include\opencv2/core/utility.hpp : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
-F:\opencv3.2\opencv\build\include\opencv2/core/utility.hpp : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
-F:\opencv3.2\opencv\build\include\opencv2/imgproc.hpp(592): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
-f:\newhandmodeljacobain\newhandmodeljacobain\DistanceTransform.h(75): warning C4244: “return”: 从“float”转换到“int”，可能丢失数据
-f:\newhandmodeljacobain\newhandmodeljacobain\DistanceTransform.h(116): warning C4244: “初始化”: 从“float”转换到“unsigned int”，可能丢失数据
-f:\newhandmodeljacobain\newhandmodeljacobain\DistanceTransform.h(122): warning C4244: “=”: 从“float”转换到“unsigned int”，可能丢失数据
-f:\newhandmodeljacobain\newhandmodeljacobain\DistanceTransform.h(127): warning C4244: “=”: 从“int”转换到“float”，可能丢失数据
-f:\newhandmodeljacobain\newhandmodeljacobain\DistanceTransform.h(137): warning C4244: “初始化”: 从“float”转换到“unsigned int”，可能丢失数据
-f:\newhandmodeljacobain\newhandmodeljacobain\DistanceTransform.h(157): warning C4244: “初始化”: 从“float”转换到“unsigned int”，可能丢失数据
-f:\newhandmodeljacobain\newhandmodeljacobain\DistanceTransform.h(163): warning C4244: “=”: 从“float”转换到“unsigned int”，可能丢失数据
-f:\newhandmodeljacobain\newhandmodeljacobain\DistanceTransform.h(168): warning C4244: “=”: 从“int”转换到“float”，可能丢失数据
-f:\newhandmodeljacobain\newhandmodeljacobain\DistanceTransform.h(178): warning C4244: “初始化”: 从“float”转换到“unsigned int”，可能丢失数据
-HandFinder.cpp(16): warning C4244: “参数”: 从“Integer”转换到“float”，可能丢失数据
-HandFinder.cpp(16): warning C4244: “参数”: 从“int”转换到“float”，可能丢失数据
-  HandModel.cpp
-F:\opencv3.2\opencv\build\include\opencv2/core/mat.hpp(2586): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
-F:\opencv3.2\opencv\build\include\opencv2/core/persistence.hpp : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
-F:\opencv3.2\opencv\build\include\opencv2/core/utility.hpp : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
-F:\opencv3.2\opencv\build\include\opencv2/core/utility.hpp : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
-F:\PCL 1.8.1\include\pcl-1.8\pcl/point_traits.h : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
-HandModel.cpp(942): warning C4267: “初始化”: 从“size_t”转换到“int”，可能丢失数据
-HandModel.cpp(1062): warning C4267: “初始化”: 从“size_t”转换到“int”，可能丢失数据
-HandModel.cpp(1133): warning C4267: “初始化”: 从“size_t”转换到“int”，可能丢失数据
-HandModel.cpp(1319): warning C4267: “初始化”: 从“size_t”转换到“int”，可能丢失数据
-HandModel.cpp(1919): warning C4267: “初始化”: 从“size_t”转换到“int”，可能丢失数据
-HandModel.cpp(1957): warning C4267: “初始化”: 从“size_t”转换到“int”，可能丢失数据
-HandModel.cpp(1981): warning C4267: “初始化”: 从“size_t”转换到“int”，可能丢失数据
-HandModel.cpp(2002): warning C4267: “初始化”: 从“size_t”转换到“int”，可能丢失数据
   MyKinect.cpp
 F:\opencv3.2\opencv\build\include\opencv2/core/mat.hpp(2586): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
 F:\opencv3.2\opencv\build\include\opencv2/core/persistence.hpp : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
@@ -48,34 +16,10 @@ f:\newhandmodeljacobain\newhandmodeljacobain\DistanceTransform.h(163): warning C
 f:\newhandmodeljacobain\newhandmodeljacobain\DistanceTransform.h(168): warning C4244: “=”: 从“int”转换到“float”，可能丢失数据
 f:\newhandmodeljacobain\newhandmodeljacobain\DistanceTransform.h(178): warning C4244: “初始化”: 从“float”转换到“unsigned int”，可能丢失数据
 F:\PCL 1.8.1\include\pcl-1.8\pcl/point_traits.h : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
-  PointCloud.cpp
-F:\PCL 1.8.1\include\pcl-1.8\pcl/point_traits.h : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
-F:\opencv3.2\opencv\build\include\opencv2/core/mat.hpp(2586): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
-F:\opencv3.2\opencv\build\include\opencv2/core/persistence.hpp : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
-F:\opencv3.2\opencv\build\include\opencv2/core/utility.hpp : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
-F:\opencv3.2\opencv\build\include\opencv2/core/utility.hpp : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
-F:\opencv3.2\opencv\build\include\opencv2/imgproc.hpp(592): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
-  源.cpp
-F:\opencv3.2\opencv\build\include\opencv2/core/mat.hpp(2586): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
-F:\opencv3.2\opencv\build\include\opencv2/core/persistence.hpp : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
-F:\opencv3.2\opencv\build\include\opencv2/core/utility.hpp : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
-F:\opencv3.2\opencv\build\include\opencv2/core/utility.hpp : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
-f:\newhandmodeljacobain\newhandmodeljacobain\DataFrame.h(20): warning C4244: “参数”: 从“int”转换到“float”，可能丢失数据
-F:\opencv3.2\opencv\build\include\opencv2/imgproc.hpp(592): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
-f:\newhandmodeljacobain\newhandmodeljacobain\DistanceTransform.h(75): warning C4244: “return”: 从“float”转换到“int”，可能丢失数据
-f:\newhandmodeljacobain\newhandmodeljacobain\DistanceTransform.h(116): warning C4244: “初始化”: 从“float”转换到“unsigned int”，可能丢失数据
-f:\newhandmodeljacobain\newhandmodeljacobain\DistanceTransform.h(122): warning C4244: “=”: 从“float”转换到“unsigned int”，可能丢失数据
-f:\newhandmodeljacobain\newhandmodeljacobain\DistanceTransform.h(127): warning C4244: “=”: 从“int”转换到“float”，可能丢失数据
-f:\newhandmodeljacobain\newhandmodeljacobain\DistanceTransform.h(137): warning C4244: “初始化”: 从“float”转换到“unsigned int”，可能丢失数据
-f:\newhandmodeljacobain\newhandmodeljacobain\DistanceTransform.h(157): warning C4244: “初始化”: 从“float”转换到“unsigned int”，可能丢失数据
-f:\newhandmodeljacobain\newhandmodeljacobain\DistanceTransform.h(163): warning C4244: “=”: 从“float”转换到“unsigned int”，可能丢失数据
-f:\newhandmodeljacobain\newhandmodeljacobain\DistanceTransform.h(168): warning C4244: “=”: 从“int”转换到“float”，可能丢失数据
-f:\newhandmodeljacobain\newhandmodeljacobain\DistanceTransform.h(178): warning C4244: “初始化”: 从“float”转换到“unsigned int”，可能丢失数据
-F:\PCL 1.8.1\include\pcl-1.8\pcl/point_traits.h : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
-源.cpp(359): warning C4267: “初始化”: 从“size_t”转换到“int”，可能丢失数据
-源.cpp(733): warning C4267: “初始化”: 从“size_t”转换到“int”，可能丢失数据
   正在生成代码
-  All 10502 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  384 of 10519 functions ( 3.7%) were compiled, the rest were copied from previous compilation.
+    2 functions were new in current compilation
+    46 functions had inline decision re-evaluated but remain unchanged
   已完成代码的生成
   NewHandModelJacobain.vcxproj -> F:\NewHandModelJacobain\x64\Release\NewHandModelJacobain.exe
   NewHandModelJacobain.vcxproj -> F:\NewHandModelJacobain\x64\Release\NewHandModelJacobain.pdb (Full PDB)

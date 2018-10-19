@@ -129,7 +129,7 @@ public:
 
 
 	//jacobain related
-	void MoveToDownSampleCorrespondingVertices(int itr, pcl::PointCloud<pcl::PointXYZ>& p, std::vector<int>& cor, int *idx_img, bool with_sil, bool has_glove);
+	void MoveToDownSampleCorrespondingVertices(int itr, pcl::PointCloud<pcl::PointXYZ>& p, std::vector<int>& cor, int *idx_img, bool has_glove);
 	bool Solved;
 	bool track_failure;
 
@@ -167,6 +167,8 @@ private:
 	void Compute_normal_And_visibel_vertices();
 
 	void SetParamsBound();
+	void show_Params();
+	void show_initParams();
 
 	//jacobain related
 	MatrixXf Compute_joint_Limited(Eigen::VectorXf & e_limit, bool has_glove);
@@ -185,6 +187,7 @@ private:
 	std::pair<Eigen::Vector3f, Eigen::Vector3f>  Collision_to_Collision_distance(Collision& a, Collision&b);
 	Eigen::MatrixXf Compute_one_CollisionPoint_Jacobian(Collision& a, Eigen::Vector3f& point);
 	Eigen::MatrixXf Compute_Collision_Limit(Eigen::VectorXf& e_limit);
+
 private:
 	void normalize(float axis[3]) {
 		float sum = sqrt(axis[0] * axis[0] + axis[1] * axis[1] + axis[2] * axis[2]);

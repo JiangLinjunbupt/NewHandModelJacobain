@@ -60,32 +60,32 @@ void HandModel::SetParamsBound()
 	//thumb
 	ParamsUpperBound[6] = 50.0f;   ParamsLowerBound[6] = -15.0f;
 	ParamsUpperBound[7] = 0.0f;	   ParamsLowerBound[7] = -60.0f;
-	ParamsUpperBound[8] = 0.0f;	   ParamsLowerBound[8] = -70.0f;
-	ParamsUpperBound[9] = 0.0f;	   ParamsLowerBound[9] = -90.0f;
+	ParamsUpperBound[8] = 0.0f;	   ParamsLowerBound[8] = -50.0f;
+	ParamsUpperBound[9] = 0.0f;	   ParamsLowerBound[9] = -98.0f;
 
 	//index
-	ParamsUpperBound[10] = 90.0f;  ParamsLowerBound[10] = -10.0f;
+	ParamsUpperBound[10] = 98.0f;  ParamsLowerBound[10] = -10.0f;
 	ParamsUpperBound[11] = 30.0f;  ParamsLowerBound[11] = -20.0f;
-	ParamsUpperBound[12] = 90.0f;  ParamsLowerBound[12] = 0.0f;
-	ParamsUpperBound[13] = 90.0f;  ParamsLowerBound[13] = 0.0f;
+	ParamsUpperBound[12] = 98.0f;  ParamsLowerBound[12] = 0.0f;
+	ParamsUpperBound[13] = 98.0f;  ParamsLowerBound[13] = 0.0f;
 
 	//middle
-	ParamsUpperBound[14] = 90.0f;  ParamsLowerBound[14] = -10.0f;
-	ParamsUpperBound[15] = 10.0;   ParamsLowerBound[15] = -10.0f;
-	ParamsUpperBound[16] = 90.0f;  ParamsLowerBound[16] = 0.0f;
-	ParamsUpperBound[17] = 90.0f;  ParamsLowerBound[17] = 0.0f;
+	ParamsUpperBound[14] = 98.0f;  ParamsLowerBound[14] = -10.0f;
+	ParamsUpperBound[15] = 20.0;   ParamsLowerBound[15] = -10.0f;
+	ParamsUpperBound[16] = 98.0f;  ParamsLowerBound[16] = 0.0f;
+	ParamsUpperBound[17] = 98.0f;  ParamsLowerBound[17] = 0.0f;
 
 	//ring
-	ParamsUpperBound[18] = 90.0f;  ParamsLowerBound[18] = -10.0f;
-	ParamsUpperBound[19] = 15.0f;  ParamsLowerBound[19] = -15.0f;
-	ParamsUpperBound[20] = 90.0f;  ParamsLowerBound[20] = 0.0f;
-	ParamsUpperBound[21] = 90.0f;  ParamsLowerBound[21] = 0.0f;
+	ParamsUpperBound[18] = 98.0f;  ParamsLowerBound[18] = -10.0f;
+	ParamsUpperBound[19] = 20.0f;  ParamsLowerBound[19] = -15.0f;
+	ParamsUpperBound[20] = 98.0f;  ParamsLowerBound[20] = 0.0f;
+	ParamsUpperBound[21] = 98.0f;  ParamsLowerBound[21] = 0.0f;
 
 	//pinkey
-	ParamsUpperBound[22] = 90.0f;  ParamsLowerBound[22] = -10.0f;
-	ParamsUpperBound[23] = 10.0f;  ParamsLowerBound[23] = -20.0f;
-	ParamsUpperBound[24] = 90.0f;  ParamsLowerBound[24] = 0.0f;
-	ParamsUpperBound[25] = 90.0f;  ParamsLowerBound[25] = 0.0f;
+	ParamsUpperBound[22] = 98.0f;  ParamsLowerBound[22] = -10.0f;
+	ParamsUpperBound[23] = 20.0f;  ParamsLowerBound[23] = -20.0f;
+	ParamsUpperBound[24] = 98.0f; ParamsLowerBound[24] = 0.0f;
+	ParamsUpperBound[25] = 98.0f;  ParamsLowerBound[25] = 0.0f;
 
 }
 
@@ -1057,7 +1057,92 @@ Eigen::MatrixXf HandModel::Compute_one_Vertex_Jacobain(int index)
 	return Jacobain_;
 }
 
-void HandModel::MoveToDownSampleCorrespondingVertices(int itr,pcl::PointCloud<pcl::PointXYZ>& p, std::vector<int>& cor,int *idx_img, bool with_sil,bool has_glove)
+
+void HandModel::show_Params()
+{
+	//Params对应关系
+	//       0       ------>    wrist_T_x    //全局平移
+	//       1       ------>    wrist_T_y    //全局平移
+	//       2       ------>    wrist_T_z    //全局平移
+	//       3       ------>    wrist_R_x
+	//       4       ------>    wrist_R_y
+	//       5       ------>    wrist_R_z
+	//       6       ------>    Thumb_Low_R_y
+	//       7       ------>    Thumb_Low_R_z
+	//       8       ------>    Thumb_mid_R_y    //这里注意了，是z不是y了
+	//       9       ------>    Thumb_top_R_y    //这里注意了，是z不是y了
+	//       10      ------>    Index_Low_R_y
+	//       11      ------>    Index_Low_R_z
+	//       12      ------>    Index_mid_R_y
+	//       13      ------>    Index_top_R_y
+	//       14      ------>    Middle_Low_R_y
+	//       15      ------>    Middle_Low_R_z
+	//       16      ------>    Middle_mid_R_y
+	//       17      ------>    Middle_top_R_y
+	//       18      ------>    Ring_Low_R_y
+	//       19      ------>    Ring_Low_R_z
+	//       20      ------>    Ring_mid_R_y
+	//       21      ------>    Ring_top_R_y
+	//       22      ------>    Pinkey_Low_R_y
+	//       23      ------>    Pinkey_Low_R_z
+	//       24      ------>    Pinkey_mid_R_y
+	//       25      ------>    Pinkey_top_R_y
+	cout << "Params is  : " << endl << "--------------------" << endl;
+	cout << "===>>>  Global_P :  " << (int)Params[0] << "   " << (int)Params[1] << "   " << (int)Params[2] << endl;
+	cout << "===>>>  Global_R :  " << (int)Params[3] << "   " << (int)Params[4] << "   " << (int)Params[5] << endl;
+	cout << endl;
+	cout << "===>>>  Thumb        Index        Middle        Ring        Pinkey        " << endl;  
+	cout << "R_low   " << (int)Params[6] << "         " << (int)Params[10] << "         " << (int)Params[14] << "         " << (int)Params[18] << "         " << (int)Params[22] << "       " << endl;
+	cout << "B_low   " << (int)Params[7] << "         " << (int)Params[11] << "         " << (int)Params[15] << "         " << (int)Params[19] << "         " << (int)Params[23] << "       " << endl;
+	cout << "R_mid   " << (int)Params[8] << "         " << (int)Params[12] << "         " << (int)Params[16] << "         " << (int)Params[20] << "         " << (int)Params[24] << "       " << endl;
+	cout << "R_top   " << (int)Params[9] << "         " << (int)Params[13] << "         " << (int)Params[17] << "         " << (int)Params[21] << "         " << (int)Params[25] << "       " << endl;
+	cout << endl<< "--------------------" << endl;
+
+}
+
+void HandModel::show_initParams()
+{
+	//Params对应关系
+	//       0       ------>    wrist_T_x    //全局平移
+	//       1       ------>    wrist_T_y    //全局平移
+	//       2       ------>    wrist_T_z    //全局平移
+	//       3       ------>    wrist_R_x
+	//       4       ------>    wrist_R_y
+	//       5       ------>    wrist_R_z
+	//       6       ------>    Thumb_Low_R_y
+	//       7       ------>    Thumb_Low_R_z
+	//       8       ------>    Thumb_mid_R_y    //这里注意了，是z不是y了
+	//       9       ------>    Thumb_top_R_y    //这里注意了，是z不是y了
+	//       10      ------>    Index_Low_R_y
+	//       11      ------>    Index_Low_R_z
+	//       12      ------>    Index_mid_R_y
+	//       13      ------>    Index_top_R_y
+	//       14      ------>    Middle_Low_R_y
+	//       15      ------>    Middle_Low_R_z
+	//       16      ------>    Middle_mid_R_y
+	//       17      ------>    Middle_top_R_y
+	//       18      ------>    Ring_Low_R_y
+	//       19      ------>    Ring_Low_R_z
+	//       20      ------>    Ring_mid_R_y
+	//       21      ------>    Ring_top_R_y
+	//       22      ------>    Pinkey_Low_R_y
+	//       23      ------>    Pinkey_Low_R_z
+	//       24      ------>    Pinkey_mid_R_y
+	//       25      ------>    Pinkey_top_R_y
+	cout << "init_Params is  : " << endl << "--------------------" << endl;
+	cout << "===>>>  Global_P :  " << (int)init_Params[0] << "   " << (int)init_Params[1] << "   " << (int)init_Params[2] << endl;
+	cout << "===>>>  Global_R :  " << (int)init_Params[3] << "   " << (int)init_Params[4] << "   " << (int)init_Params[5] << endl;
+	cout << endl;
+	cout << "===>>>  Thumb        Index        Middle        Ring        Pinkey        " << endl;
+	cout << "R_low   " << (int)init_Params[6] << "         " << (int)init_Params[10] << "         " << (int)init_Params[14] << "         " << (int)init_Params[18] << "         " << (int)init_Params[22] << "       " << endl;
+	cout << "B_low   " << (int)init_Params[7] << "         " << (int)init_Params[11] << "         " << (int)init_Params[15] << "         " << (int)init_Params[19] << "         " << (int)init_Params[23] << "       " << endl;
+	cout << "R_mid   " << (int)init_Params[8] << "         " << (int)init_Params[12] << "         " << (int)init_Params[16] << "         " << (int)init_Params[20] << "         " << (int)init_Params[24] << "       " << endl;
+	cout << "R_top   " << (int)init_Params[9] << "         " << (int)init_Params[13] << "         " << (int)init_Params[17] << "         " << (int)init_Params[21] << "         " << (int)init_Params[25] << "       " << endl;
+	cout << endl << "--------------------" << endl;
+
+}
+
+void HandModel::MoveToDownSampleCorrespondingVertices(int itr,pcl::PointCloud<pcl::PointXYZ>& p, std::vector<int>& cor,int *idx_img,bool has_glove)
 {
 	int NumofCorrespond = p.points.size();
 	Eigen::VectorXf e = Eigen::VectorXf::Zero(3 * NumofCorrespond, 1);
@@ -1101,8 +1186,10 @@ void HandModel::MoveToDownSampleCorrespondingVertices(int itr,pcl::PointCloud<pc
 		cout << " final e is : " << e_final << endl
 			<< "---------------》 e_3D  is : " << e.norm() << endl
 			<< "---------------》 e_2D  is : " << e_sil.norm() << endl;
+		show_initParams();
+		show_Params();
 
-		if (e_final < 3000)
+		if (e_final < 3500)
 		{
 			this->track_failure = false;
 
@@ -1170,42 +1257,36 @@ void HandModel::MoveToDownSampleCorrespondingVertices(int itr,pcl::PointCloud<pc
 	Eigen::VectorXf dAngles = Eigen::VectorXf::Zero(NumberofParams, 1);
 
 
-	if (with_sil)
+	MatrixXf JtJ = omiga_3D*Jt*J
+		+ omiga_2D*J_sil.transpose()*J_sil
+		+ omiga_joint_limited*J_limit.transpose()*J_limit
+		+ omiga_collision*J_col.transpose()*J_col
+		+ omiga_Temporal_1*J_temporal_1.transpose()*J_temporal_1
+		+ omiga_Temporal_2*J_temporal_2.transpose()*J_temporal_2
+		+ D;
+
+	VectorXf JTe = omiga_3D*Jt*e
+		+ omiga_2D*J_sil.transpose()*e_sil
+		+ omiga_joint_limited*J_limit.transpose()*e_limit
+		+ omiga_collision*J_col.transpose()*e_col
+		+ omiga_Temporal_1*J_temporal_1.transpose()*e_temporal_1
+		+ omiga_Temporal_2*J_temporal_2.transpose()*e_temporal_2;
+
+
+	if (itr < 2)
 	{
-		MatrixXf JtJ = omiga_3D*Jt*J
-			+ omiga_2D*J_sil.transpose()*J_sil
-			+ omiga_joint_limited*J_limit.transpose()*J_limit
-			+ omiga_collision*J_col.transpose()*J_col
-			+ omiga_Temporal_1*J_temporal_1.transpose()*J_temporal_1
-			+ omiga_Temporal_2*J_temporal_2.transpose()*J_temporal_2
-			+ D;
+		for (int i = 6; i < NumberofParams; ++i) JtJ.col(i).setZero();
 
-		VectorXf JTe = omiga_3D*Jt*e
-			+ omiga_2D*J_sil.transpose()*e_sil
-			+ omiga_joint_limited*J_limit.transpose()*e_limit
-			+ omiga_collision*J_col.transpose()*e_col
-			+ omiga_Temporal_1*J_temporal_1.transpose()*e_temporal_1
-			+ omiga_Temporal_2*J_temporal_2.transpose()*e_temporal_2;
-
-		dAngles = JtJ.colPivHouseholderQr().solve(JTe);
+		for (int i = 6; i < NumberofParams; ++i)
+		{
+			JtJ.row(i).setZero();
+			JTe.row(i).setZero();
+		}
 	}
-	else
-	{
-		MatrixXf JtJ = omiga_3D*Jt*J
-			+ omiga_joint_limited*J_limit.transpose()*J_limit 
-			+ omiga_collision*J_col.transpose()*J_col
-			+ omiga_Temporal_1*J_temporal_1.transpose()*J_temporal_1
-			+ omiga_Temporal_2*J_temporal_2.transpose()*J_temporal_2
-			+ D;
 
-		VectorXf JTe = omiga_3D*Jt*e
-			+ omiga_joint_limited*J_limit.transpose()*e_limit
-			+ omiga_collision*J_col.transpose()*e_col
-			+ omiga_Temporal_1*J_temporal_1.transpose()*e_temporal_1
-			+ omiga_Temporal_2*J_temporal_2.transpose()*e_temporal_2;
 
-		dAngles = JtJ.colPivHouseholderQr().solve(JTe);
-	}
+	dAngles = JtJ.colPivHouseholderQr().solve(JTe);
+
 
 	for (int i = 0; i < NumberofParams; i++)
 		Params[i] += dAngles(i);
@@ -1226,23 +1307,68 @@ MatrixXf HandModel::Compute_joint_Limited(Eigen::VectorXf & e_limit, bool has_gl
 
 	if (has_glove)
 	{
-		for (int i = 6; i < NumberofParams; i++)
+		for (int i = 8; i < NumberofParams; i++)
 		{
-			float q_max = (init_Params[i] + 20) > ParamsUpperBound[i] ? ParamsUpperBound[i] : (init_Params[i] + 20);
-			float q_min = (init_Params[i] - 20) < ParamsLowerBound[i] ? ParamsLowerBound[i] : (init_Params[i] - 20);
-			if (Params[i] > q_max) {
-				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
-				e_limit(i) = (q_max - Params[i]) - std::numeric_limits<float>::epsilon();
-				J_limit(i, i) = 1;
+
+			if (i != 13 && i != 17 && i != 21 && i != 25)
+			{
+				if (i == 11 || i == 15 || i == 19 || i == 23)
+				{
+					float q_max = ParamsUpperBound[i];
+					float q_min = ParamsLowerBound[i];
+					if (Params[i] > q_max) {
+						//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+						e_limit(i) = (q_max - Params[i]) - std::numeric_limits<float>::epsilon();
+						J_limit(i, i) = 1;
+					}
+					else if (Params[i] < q_min) {
+						//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+						e_limit(i) = (q_min - Params[i]) + std::numeric_limits<float>::epsilon();
+						J_limit(i, i) = 1;
+					}
+					else {
+						J_limit(i, i) = 0;
+						e_limit(i) = 0;
+					}
+				}
+				else
+				{
+					float q_max = (init_Params[i] + 20) > ParamsUpperBound[i] ? ParamsUpperBound[i] : (init_Params[i] + 20);
+					float q_min = (init_Params[i] - 20) < ParamsLowerBound[i] ? ParamsLowerBound[i] : (init_Params[i] - 20);
+					if (Params[i] > q_max) {
+						//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+						e_limit(i) = (q_max - Params[i]) - std::numeric_limits<float>::epsilon();
+						J_limit(i, i) = 1;
+					}
+					else if (Params[i] < q_min) {
+						//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+						e_limit(i) = (q_min - Params[i]) + std::numeric_limits<float>::epsilon();
+						J_limit(i, i) = 1;
+					}
+					else {
+						J_limit(i, i) = 0;
+						e_limit(i) = 0;
+					}
+				}
 			}
-			else if (Params[i] < q_min) {
-				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
-				e_limit(i) = (q_min - Params[i]) + std::numeric_limits<float>::epsilon();
-				J_limit(i, i) = 1;
-			}
-			else {
-				J_limit(i, i) = 0;
-				e_limit(i) = 0;
+			else
+			{
+				float q_max = (init_Params[i] + 20) > ParamsUpperBound[i] ? ParamsUpperBound[i] : (init_Params[i] + 20);
+				float q_min = Params[i - 1]*0.4f;
+				if (Params[i] > q_max) {
+					//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+					e_limit(i) = (q_max - Params[i]) - std::numeric_limits<float>::epsilon();
+					J_limit(i, i) = 1;
+				}
+				else if (Params[i] < q_min) {
+					//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+					e_limit(i) = (q_min - Params[i]) + std::numeric_limits<float>::epsilon();
+					J_limit(i, i) = 1;
+				}
+				else {
+					J_limit(i, i) = 0;
+					e_limit(i) = 0;
+				}
 			}
 		}
 	}
@@ -1250,24 +1376,48 @@ MatrixXf HandModel::Compute_joint_Limited(Eigen::VectorXf & e_limit, bool has_gl
 	{
 		for (int i = 6; i < NumberofParams; i++)
 		{
-			float q_max = ParamsUpperBound[i];
-			float q_min = ParamsLowerBound[i];
-			if (Params[i] > q_max) {
-				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
-				e_limit(i) = (q_max - Params[i]) - std::numeric_limits<float>::epsilon();
-				J_limit(i, i) = 1;
+			if (i != 13 && i != 17 && i != 21 && i != 25)
+			{
+				float q_max = ParamsUpperBound[i];
+				float q_min = ParamsLowerBound[i];
+				if (Params[i] > q_max) {
+					//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+					e_limit(i) = (q_max - Params[i]) - std::numeric_limits<float>::epsilon();
+					J_limit(i, i) = 1;
+				}
+				else if (Params[i] < q_min) {
+					//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+					e_limit(i) = (q_min - Params[i]) + std::numeric_limits<float>::epsilon();
+					J_limit(i, i) = 1;
+				}
+				else {
+					J_limit(i, i) = 0;
+					e_limit(i) = 0;
+				}
 			}
-			else if (Params[i] < q_min) {
-				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
-				e_limit(i) = (q_min - Params[i]) + std::numeric_limits<float>::epsilon();
-				J_limit(i, i) = 1;
-			}
-			else {
-				J_limit(i, i) = 0;
-				e_limit(i) = 0;
+			else
+			{
+				float q_max = (Params[i - 1] + 20.0f) > ParamsUpperBound[i] ? ParamsUpperBound[i] : (Params[i - 1] + 20.0f);
+				float q_min = Params[i - 1] * 0.5f;
+				if (Params[i] > q_max) {
+					//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+					e_limit(i) = (q_max - Params[i]) - std::numeric_limits<float>::epsilon();
+					J_limit(i, i) = 1;
+				}
+				else if (Params[i] < q_min) {
+					//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+					e_limit(i) = (q_min - Params[i]) + std::numeric_limits<float>::epsilon();
+					J_limit(i, i) = 1;
+				}
+				else {
+					J_limit(i, i) = 0;
+					e_limit(i) = 0;
+				}
 			}
 		}
 	}
+
+
 	return J_limit;
 }
 

@@ -38,9 +38,9 @@ clock_t start;
 clock_t ends_clock;
 
 bool with_Kinect = false;
-bool with_sil = false;
 bool show_mesh = true;
 bool has_glove = false;
+bool watch_result = false;
 //共享内存的相关定义
 HANDLE hMapFile;
 LPCTSTR pBuf;
@@ -118,17 +118,10 @@ void keyboardDown(unsigned char key, int x, int y) {
 	case  27:   // ESC
 		exit(0);
 	case 'b':
-		with_Kinect = true;
-		break;
-	case 'e':
-		with_Kinect = false;
-		with_sil = false;
+		with_Kinect = !with_Kinect;
 		break;
 	case 'w':
-		with_sil = true;
-		break;
-	case 'n':
-		with_sil = false;
+		watch_result =!watch_result;
 		break;
 	case 'm':
 		show_mesh = !show_mesh;
@@ -389,9 +382,9 @@ void draw() {
 	control.gy = handmodel->GlobalPosition(1);
 	control.gz = handmodel->GlobalPosition(2);
 	double r = 180;
-	double x = r*sin(control.roty)*cos(control.rotx);
-	double y = r*sin(control.roty)*sin(control.rotx);
-	double z = r*cos(control.roty);
+	double x = r*cos(control.roty)*sin(control.rotx);
+	double y = r*sin(control.roty);
+	double z = r*cos(control.roty)*cos(control.rotx);
 	//cout<< x <<" "<< y <<" " << z<<endl;
 	gluLookAt(x + control.gx, y + control.gy, z + control.gz, control.gx, control.gy, control.gz, 0.0, 1.0, 0.0);//个人理解最开始是看向-z的，之后的角度是在global中心上叠加的，所以要加
 
@@ -399,13 +392,13 @@ void draw() {
 	if (show_mesh)  draw_Mesh();
 	else draw_WireHand();
 
-	draw_skeleton();
+	//draw_skeleton();
 	draw_CloudPoint();
 	if (with_Kinect)  draw_Cooresponding_connection();
 	draw_Global_Coordinate();
-
-	draw_Collision();
-	show_Collision();
+	draw_Visible_vertex();
+	//draw_Collision();
+	//show_Collision();
 
 	glFlush();
 	glutSwapBuffers();
@@ -424,66 +417,69 @@ void mouseMotion(int x, int y) {
 void idle() {
 	start = clock();
 
-	if (itr == 0)
+	if (!watch_result)
 	{
-		mykinect.fetch_data(dataframe, handfinder, pointcloud);
-
-		//以下是distance_使用的测试代码，测试表明，能够找到最近的非零点
-		//{
-			//cv::Mat  hand = handfinder.sensor_hand_silhouette;     
-			//circle(hand, cvPoint(100, 200), 10, Scalar(255, 255, 255), -1, 8);
-			//circle(hand, cvPoint(400, 200), 10, Scalar(255, 255, 255), -1, 8);
-			//int idx = handfinder.idxs_image[200*512+100];   
-			//int idx2 = handfinder.idxs_image[200*512+400];
-			//line(hand, cvPoint(100, 200), cvPoint(idx % 512, idx / 512), 255, 5);
-			//line(hand, cvPoint(400, 200), cvPoint(idx2 % 512, idx2 / 512), 255, 5);
-			//circle(hand, cvPoint(idx % 512, idx / 512), 10, Scalar(255, 255, 255), -1, 8);
-			//circle(hand, cvPoint(idx2 % 512, idx2 / 512), 10, Scalar(255, 255, 255), -1, 8);
-			//imshow("hand", hand);
-			//cvWaitKey(1);
-		//}
-
-		has_glove = false;
-		for (int i = 0; i < 26; i++)
+		if (itr == 0)
 		{
-			if (GetSharedMemeryPtr[i] != 0)  has_glove = true;
-			handmodel->init_Params[i] = GetSharedMemeryPtr[i];
+			mykinect.fetch_data(dataframe, handfinder, pointcloud);
+
+			//以下是distance_使用的测试代码，测试表明，能够找到最近的非零点
+			//{
+				//cv::Mat  hand = handfinder.sensor_hand_silhouette;     
+				//circle(hand, cvPoint(100, 200), 10, Scalar(255, 255, 255), -1, 8);
+				//circle(hand, cvPoint(400, 200), 10, Scalar(255, 255, 255), -1, 8);
+				//int idx = handfinder.idxs_image[200*512+100];   
+				//int idx2 = handfinder.idxs_image[200*512+400];
+				//line(hand, cvPoint(100, 200), cvPoint(idx % 512, idx / 512), 255, 5);
+				//line(hand, cvPoint(400, 200), cvPoint(idx2 % 512, idx2 / 512), 255, 5);
+				//circle(hand, cvPoint(idx % 512, idx / 512), 10, Scalar(255, 255, 255), -1, 8);
+				//circle(hand, cvPoint(idx2 % 512, idx2 / 512), 10, Scalar(255, 255, 255), -1, 8);
+				//imshow("hand", hand);
+				//cvWaitKey(1);
+			//}
+
+			has_glove = false;
+			for (int i = 0; i < 26; i++)
+			{
+				if (GetSharedMemeryPtr[i] != 0)  has_glove = true;
+				handmodel->init_Params[i] = GetSharedMemeryPtr[i];
+			}
+
+			handmodel->init_Params[0] = pointcloud.PointCloud_center_x;
+			handmodel->init_Params[1] = pointcloud.PointCloud_center_y;
+			handmodel->init_Params[2] = pointcloud.PointCloud_center_z;
+
+			judge_initParams();
+			handmodel->Updata(handmodel->Params);
+
 		}
 
-		handmodel->init_Params[0] = pointcloud.PointCloud_center_x;
-		handmodel->init_Params[1] = pointcloud.PointCloud_center_y;
-		handmodel->init_Params[2] = pointcloud.PointCloud_center_z;
+		float ends_clock0 = clock();
+		//cout << "fetching Time : " << (double)(ends_clock0 - start) *1000/ CLK_TCK << endl;
 
-		judge_initParams();
-		handmodel->Updata(handmodel->Params);
-
-	}
-
-	float ends_clock0 = clock();
-	//cout << "fetching Time : " << (double)(ends_clock0 - start) *1000/ CLK_TCK << endl;
-
-	if (with_Kinect)
-	{
-
-		while (!handmodel->Solved)
+		if (with_Kinect)
 		{
-			load_handmodel_visible_cloud(*Handmodel_visible_cloud, *handmodel);
-			find_correspondences(cloud_correspond);
 
-			handmodel->MoveToDownSampleCorrespondingVertices(itr, pointcloud.pointcloud_downsample, cloud_correspond, handfinder.idxs_image, with_sil,has_glove);
+			while (!handmodel->Solved)
+			{
+				load_handmodel_visible_cloud(*Handmodel_visible_cloud, *handmodel);
+				find_correspondences(cloud_correspond);
 
-			itr++;
+				handmodel->MoveToDownSampleCorrespondingVertices(itr, pointcloud.pointcloud_downsample, cloud_correspond, handfinder.idxs_image, has_glove);
+
+				itr++;
+			}
+
+			handmodel->Updata(handmodel->Params);
 		}
 
-		handmodel->Updata(handmodel->Params);
+
+		memcpy((float*)pBuf_out, handmodel->Params, sizeof(float) * 26);
+		//MixShowResult(handmodel->Generate_handimg(), handfinder.sensor_hand_silhouette);
+
+		itr = 0;
+		handmodel->Solved = false;
 	}
-
-
-	memcpy((float*)pBuf_out, handmodel->Params, sizeof(float) * 26);
-	//MixShowResult(handmodel->Generate_handimg(), handfinder.sensor_hand_silhouette);
-
-	itr = 0;
-	handmodel->Solved = false;
 	ends_clock = clock();
 	//cout << "Running Time : " << (double)(ends_clock - start)*1000 / CLK_TCK << endl;
 
@@ -701,13 +697,15 @@ void judge_initParams()
 
 		if (e_merge <= e_previous && e_merge <= e_glove)
 		{
-			for (int i = 0; i < 26; ++i) handmodel->init_Params[i] = merge_Params[i];
+			for (int i = 0; i < 26; ++i) handmodel->Params[i] = merge_Params[i];
+			return;
 			//cout << "using merge Params  :  " << e_merge << endl;
 		}
 
 		if (e_previous < e_merge && e_previous < e_glove)
 		{
-			for (int i = 0; i < 26; ++i) handmodel->init_Params[i] = handmodel->previous_Params[i];
+			for (int i = 0; i < 26; ++i) handmodel->Params[i] = handmodel->previous_Params[i];
+			return;
 			//cout << "using previous Params  :  " << e_previous << endl;
 		}
 	}
