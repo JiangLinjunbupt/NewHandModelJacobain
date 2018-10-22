@@ -7,6 +7,10 @@
 
 #include<string>
 #include <opencv2\opencv.hpp>
+
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 using namespace cv;
 using namespace std;
 
@@ -52,7 +56,6 @@ private:
 	pcl::PointCloud<pcl::PointXYZ> pointcloud_from_depth[2];
 
 	Eigen::Vector3f pointcloud_center[2];
-
 
 	cv::Mat m_middepth8u;
 

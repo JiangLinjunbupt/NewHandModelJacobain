@@ -1189,7 +1189,7 @@ void HandModel::MoveToDownSampleCorrespondingVertices(int itr,pcl::PointCloud<pc
 		show_initParams();
 		show_Params();
 
-		if (e_final < 3500)
+		if (e_final < 4000)
 		{
 			this->track_failure = false;
 

@@ -3,10 +3,6 @@
 #include <iostream>
 #include <stdio.h>
 
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-
 std::thread sensor_thread;
 std::mutex swap_mutex;
 std::condition_variable condition;

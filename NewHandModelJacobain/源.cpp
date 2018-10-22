@@ -549,7 +549,7 @@ void draw() {
 	}
 
 	draw_CloudPoint();
-	if (with_Kinect)  draw_Cooresponding_connection();
+	//if (with_Kinect)  draw_Cooresponding_connection();
 	draw_Global_Coordinate();
 
 	//draw_Visible_vertex();
@@ -629,9 +629,6 @@ void idle() {
 			handmodel->Updata(handmodel->Params);
 		}
 
-		handmodel->Params[0] = 0;
-		handmodel->Params[1] = 0;
-		handmodel->Params[2] = 0;
 		memcpy((float*)pBuf_out, handmodel->Params, sizeof(float) * 26);
 		//MixShowResult(handmodel->Generate_handimg(), handfinder.sensor_hand_silhouette);
 
@@ -639,7 +636,6 @@ void idle() {
 		handmodel->Solved = false;
 	}
 
-	cout << handmodel->Params[0] << "   " << handmodel->Params[1] << "   " << handmodel->Params[2] << endl;
 	ends_clock = clock();
 	//cout << "Running Time : " << (double)(ends_clock - start)*1000 / CLK_TCK << endl;
 
@@ -661,9 +657,16 @@ void initGL(int width, int height) {
 
 #pragma endregion 
 
+void run_glove()
+{
+	system("D:\\Github_project\\SharedMemeryServer\\Debug\\SharedMemeryServer.exe");
+}
 
 int main(int argc, char** argv)
 {
+
+	std::thread glove_thread = std::thread(&run_glove);
+	glove_thread.detach();
 
 #pragma region SharedMemery
 	hMapFile = CreateFileMapping(
