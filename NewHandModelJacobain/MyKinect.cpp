@@ -11,7 +11,7 @@ std::thread sensor_thread;
 std::mutex swap_mutex;
 std::condition_variable condition;
 bool main_released = true;
-bool thread_released = false;
+bool thread_released = true;
 
 bool wristband_found_buffer;
 
@@ -302,6 +302,7 @@ void myKinect::run2()
 		CameraSpacePoint nearestRightHandPosition;
 		CameraSpacePoint nearestRightElbowPosition;
 		DepthSpacePoint depthSpaceElbowPosition;
+		DepthSpacePoint depthSpaceRightHandPosition;
 
 		if (myBodyReader->AcquireLatestFrame(&myBodyFrame) == S_OK)
 		{
@@ -338,6 +339,7 @@ void myKinect::run2()
 
 			}
 			myMapper->MapCameraPointToDepthSpace(nearestRightElbowPosition, &depthSpaceElbowPosition);
+			myMapper->MapCameraPointToDepthSpace(nearestRightHandPosition, &depthSpaceRightHandPosition);
 		}
 		else
 		{
@@ -358,7 +360,7 @@ void myKinect::run2()
 					+ pow(p.Y - nearestRightHandPosition.Y, 2)
 					+ pow(p.Z - nearestRightHandPosition.Z, 2));
 
-				if (distance <0.12)
+				if (distance <0.135)
 				{
 					indicator[NUM_indicator++] = i;
 					m_middepth8u.at<uchar>(row_, col_) = 255;
@@ -399,22 +401,31 @@ void myKinect::run2()
 			Mat dist_image;
 			distanceTransform(m_middepth8u, dist_image, CV_DIST_L2, 3);
 			int temp = 0, R = 0, cx = 0, cy = 0;
-			for (int i = 0; i < m_middepth8u.rows; i++)
-				for (int j = 0; j < m_middepth8u.cols; j++)
+
+			int search_area_min_col = depthSpaceRightHandPosition.X - 40 > 0 ? depthSpaceRightHandPosition.X - 40 : 0;
+			int search_area_max_col = depthSpaceRightHandPosition.X + 40 > 512 ? 512 : depthSpaceRightHandPosition.X + 40;
+
+			int search_area_min_row = depthSpaceRightHandPosition.Y - 40 > 0 ? depthSpaceRightHandPosition.Y - 40 : 0;
+			int search_area_max_row = depthSpaceRightHandPosition.Y + 40 > 424 ? 424 : depthSpaceRightHandPosition.Y + 40;
+
+			for (int row = search_area_min_row; row < search_area_max_row; row++)
+			{
+				for (int col = search_area_min_col; col < search_area_max_col; col++)
 				{
-					/* checks if the point is inside the contour. Optionally computes the signed distance from the point to the contour boundary*/
-					if (m_middepth8u.at<uchar>(i, j) == 255)
+					if (m_middepth8u.at<uchar>(row, col) == 255)
 					{
-						temp = (int)dist_image.ptr<float>(i)[j];
+
+						temp = (int)dist_image.ptr<float>(row)[col];
 						if (temp > R)
 						{
 							R = temp;
-							cy = i;
-							cx = j;
+							cy = row;
+							cx = col;
 						}
 
 					}
 				}
+			}
 
 
 			//判断主方向是否需要反向，根据内切圆和手肘点
@@ -454,6 +465,7 @@ void myKinect::run2()
 			cv::flip(m_middepth8u, m_middepth8u, 0);
 			distance_transform.exec(m_middepth8u.data, 125);
 			std::copy(distance_transform.idxs_image_ptr(), distance_transform.idxs_image_ptr() + 424 * 512, idx_image_buffer_BACK_BUFFER);
+
 
 			NUM_indicator = 0;
 			int count = 0;

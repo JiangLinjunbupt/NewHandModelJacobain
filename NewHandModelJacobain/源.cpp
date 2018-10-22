@@ -41,6 +41,7 @@ bool with_Kinect = false;
 bool show_mesh = true;
 bool has_glove = false;
 bool watch_result = false;
+bool show_skeleton = false;
 //共享内存的相关定义
 HANDLE hMapFile;
 LPCTSTR pBuf;
@@ -125,6 +126,9 @@ void keyboardDown(unsigned char key, int x, int y) {
 		break;
 	case 'm':
 		show_mesh = !show_mesh;
+		break;
+	case 's':
+		show_skeleton = !show_skeleton;
 		break;
 	}
 }
@@ -237,31 +241,176 @@ void draw_Vertex()
 }
 void draw_skeleton()
 {
-	//画骨架
-	for (int i = 0; i < handmodel->NumofJoints; i++) {
+	glDisable(GL_LIGHT0);
+	glDisable(GL_LIGHTING);
+
+	for (int i = 0; i < handmodel->NumofJoints; ++i) {
 		//画点开始 
-		glEnable(GL_LIGHTING);
-		glEnable(GL_LIGHT0);
 		glColor3f(1.0, 0.0, 0.0);
 		glPushMatrix();
 		glTranslatef(handmodel->Joints[i].CorrespondingPosition(0), handmodel->Joints[i].CorrespondingPosition(1), handmodel->Joints[i].CorrespondingPosition(2));
-		glutSolidSphere(4, 10, 10);
+		glutSolidSphere(1.5, 10, 10);
 		glPopMatrix();
+	}
 
-		//画点结束，使用push和popmatrix是因为保证每个关节点的偏移都是相对于全局坐标中心点做的变换。
+	//画食指
+	{
+		glLineWidth(5);
+		glColor3f(1.0, 0.0, 0);
+		glBegin(GL_LINES);
+		glVertex3f(handmodel->Joints[0].CorrespondingPosition(0), handmodel->Joints[0].CorrespondingPosition(1), handmodel->Joints[0].CorrespondingPosition(2));
+		glVertex3f(handmodel->Joints[2].CorrespondingPosition(0), handmodel->Joints[2].CorrespondingPosition(1), handmodel->Joints[2].CorrespondingPosition(2));
+		glEnd();
 
-		int parent_joint_index = handmodel->Joints[i].parent_joint_index;
-		//画线开始  //不画wrist到arm的那条线
-		if (parent_joint_index != -1) {
-			glDisable(GL_LIGHT0);
-			glDisable(GL_LIGHTING);
-			glLineWidth(5);
-			glColor3f(0.0, 1.0, 0);
-			glBegin(GL_LINES);
-			glVertex3f(handmodel->Joints[i].CorrespondingPosition(0), handmodel->Joints[i].CorrespondingPosition(1), handmodel->Joints[i].CorrespondingPosition(2));
-			glVertex3f(handmodel->Joints[parent_joint_index].CorrespondingPosition(0), handmodel->Joints[parent_joint_index].CorrespondingPosition(1), handmodel->Joints[parent_joint_index].CorrespondingPosition(2));
-			glEnd();
-		}
+
+		glLineWidth(5);
+		glColor3f(1.0, 0.0, 0);
+		glBegin(GL_LINES);
+		glVertex3f(handmodel->Joints[2].CorrespondingPosition(0), handmodel->Joints[2].CorrespondingPosition(1), handmodel->Joints[2].CorrespondingPosition(2));
+		glVertex3f(handmodel->Joints[3].CorrespondingPosition(0), handmodel->Joints[3].CorrespondingPosition(1), handmodel->Joints[3].CorrespondingPosition(2));
+		glEnd();
+
+		glLineWidth(5);
+		glColor3f(1.0, 0.0, 0);
+		glBegin(GL_LINES);
+		glVertex3f(handmodel->Joints[3].CorrespondingPosition(0), handmodel->Joints[3].CorrespondingPosition(1), handmodel->Joints[3].CorrespondingPosition(2));
+		glVertex3f(handmodel->Joints[4].CorrespondingPosition(0), handmodel->Joints[4].CorrespondingPosition(1), handmodel->Joints[4].CorrespondingPosition(2));
+		glEnd();
+
+		glLineWidth(5);
+		glColor3f(1.0, 0.0, 0);
+		glBegin(GL_LINES);
+		glVertex3f(handmodel->Joints[4].CorrespondingPosition(0), handmodel->Joints[4].CorrespondingPosition(1), handmodel->Joints[4].CorrespondingPosition(2));
+		glVertex3f(handmodel->Joints[5].CorrespondingPosition(0), handmodel->Joints[5].CorrespondingPosition(1), handmodel->Joints[5].CorrespondingPosition(2));
+		glEnd();
+	}
+
+	//画中指
+	{
+		glLineWidth(5);
+		glColor3f(0.0, 1.0, 0);
+		glBegin(GL_LINES);
+		glVertex3f(handmodel->Joints[0].CorrespondingPosition(0), handmodel->Joints[0].CorrespondingPosition(1), handmodel->Joints[0].CorrespondingPosition(2));
+		glVertex3f(handmodel->Joints[6].CorrespondingPosition(0), handmodel->Joints[6].CorrespondingPosition(1), handmodel->Joints[6].CorrespondingPosition(2));
+		glEnd();
+
+
+		glLineWidth(5);
+		glColor3f(0.0, 1.0, 0);
+		glBegin(GL_LINES);
+		glVertex3f(handmodel->Joints[6].CorrespondingPosition(0), handmodel->Joints[6].CorrespondingPosition(1), handmodel->Joints[6].CorrespondingPosition(2));
+		glVertex3f(handmodel->Joints[7].CorrespondingPosition(0), handmodel->Joints[7].CorrespondingPosition(1), handmodel->Joints[7].CorrespondingPosition(2));
+		glEnd();
+
+		glLineWidth(5);
+		glColor3f(0.0, 1.0, 0);
+		glBegin(GL_LINES);
+		glVertex3f(handmodel->Joints[7].CorrespondingPosition(0), handmodel->Joints[7].CorrespondingPosition(1), handmodel->Joints[7].CorrespondingPosition(2));
+		glVertex3f(handmodel->Joints[8].CorrespondingPosition(0), handmodel->Joints[8].CorrespondingPosition(1), handmodel->Joints[8].CorrespondingPosition(2));
+		glEnd();
+
+		glLineWidth(5);
+		glColor3f(0.0, 1.0, 0);
+		glBegin(GL_LINES);
+		glVertex3f(handmodel->Joints[8].CorrespondingPosition(0), handmodel->Joints[8].CorrespondingPosition(1), handmodel->Joints[8].CorrespondingPosition(2));
+		glVertex3f(handmodel->Joints[9].CorrespondingPosition(0), handmodel->Joints[9].CorrespondingPosition(1), handmodel->Joints[9].CorrespondingPosition(2));
+		glEnd();
+	}
+
+	//画小指
+	{
+		glLineWidth(5);
+		glColor3f(0.0, 0.0, 1.0);
+		glBegin(GL_LINES);
+		glVertex3f(handmodel->Joints[0].CorrespondingPosition(0), handmodel->Joints[0].CorrespondingPosition(1), handmodel->Joints[0].CorrespondingPosition(2));
+		glVertex3f(handmodel->Joints[10].CorrespondingPosition(0), handmodel->Joints[10].CorrespondingPosition(1), handmodel->Joints[10].CorrespondingPosition(2));
+		glEnd();
+
+
+		glLineWidth(5);
+		glColor3f(0.0, 0.0, 1.0);
+		glBegin(GL_LINES);
+		glVertex3f(handmodel->Joints[10].CorrespondingPosition(0), handmodel->Joints[10].CorrespondingPosition(1), handmodel->Joints[10].CorrespondingPosition(2));
+		glVertex3f(handmodel->Joints[11].CorrespondingPosition(0), handmodel->Joints[11].CorrespondingPosition(1), handmodel->Joints[11].CorrespondingPosition(2));
+		glEnd();
+
+		glLineWidth(5);
+		glColor3f(0.0, 0.0, 1.0);
+		glBegin(GL_LINES);
+		glVertex3f(handmodel->Joints[11].CorrespondingPosition(0), handmodel->Joints[11].CorrespondingPosition(1), handmodel->Joints[11].CorrespondingPosition(2));
+		glVertex3f(handmodel->Joints[12].CorrespondingPosition(0), handmodel->Joints[12].CorrespondingPosition(1), handmodel->Joints[12].CorrespondingPosition(2));
+		glEnd();
+
+		glLineWidth(5);
+		glColor3f(0.0, 0.0, 1.0);
+		glBegin(GL_LINES);
+		glVertex3f(handmodel->Joints[12].CorrespondingPosition(0), handmodel->Joints[12].CorrespondingPosition(1), handmodel->Joints[12].CorrespondingPosition(2));
+		glVertex3f(handmodel->Joints[13].CorrespondingPosition(0), handmodel->Joints[13].CorrespondingPosition(1), handmodel->Joints[13].CorrespondingPosition(2));
+		glEnd();
+	}
+
+	//画无名指
+	{
+		glLineWidth(5);
+		glColor3f(1.0, 0.0, 1.0);
+		glBegin(GL_LINES);
+		glVertex3f(handmodel->Joints[0].CorrespondingPosition(0), handmodel->Joints[0].CorrespondingPosition(1), handmodel->Joints[0].CorrespondingPosition(2));
+		glVertex3f(handmodel->Joints[14].CorrespondingPosition(0), handmodel->Joints[14].CorrespondingPosition(1), handmodel->Joints[14].CorrespondingPosition(2));
+		glEnd();
+
+
+		glLineWidth(5);
+		glColor3f(1.0, 0.0, 1.0);
+		glBegin(GL_LINES);
+		glVertex3f(handmodel->Joints[14].CorrespondingPosition(0), handmodel->Joints[14].CorrespondingPosition(1), handmodel->Joints[14].CorrespondingPosition(2));
+		glVertex3f(handmodel->Joints[15].CorrespondingPosition(0), handmodel->Joints[15].CorrespondingPosition(1), handmodel->Joints[15].CorrespondingPosition(2));
+		glEnd();
+
+		glLineWidth(5);
+		glColor3f(1.0, 0.0, 1.0);
+		glBegin(GL_LINES);
+		glVertex3f(handmodel->Joints[15].CorrespondingPosition(0), handmodel->Joints[15].CorrespondingPosition(1), handmodel->Joints[15].CorrespondingPosition(2));
+		glVertex3f(handmodel->Joints[16].CorrespondingPosition(0), handmodel->Joints[16].CorrespondingPosition(1), handmodel->Joints[16].CorrespondingPosition(2));
+		glEnd();
+
+		glLineWidth(5);
+		glColor3f(1.0, 0.0, 1.0);
+		glBegin(GL_LINES);
+		glVertex3f(handmodel->Joints[16].CorrespondingPosition(0), handmodel->Joints[16].CorrespondingPosition(1), handmodel->Joints[16].CorrespondingPosition(2));
+		glVertex3f(handmodel->Joints[17].CorrespondingPosition(0), handmodel->Joints[17].CorrespondingPosition(1), handmodel->Joints[17].CorrespondingPosition(2));
+		glEnd();
+	}
+
+	//画拇指
+	{
+		glLineWidth(5);
+		glColor3f(1.0, 1.0, 0.0);
+		glBegin(GL_LINES);
+		glVertex3f(handmodel->Joints[0].CorrespondingPosition(0), handmodel->Joints[0].CorrespondingPosition(1), handmodel->Joints[0].CorrespondingPosition(2));
+		glVertex3f(handmodel->Joints[18].CorrespondingPosition(0), handmodel->Joints[18].CorrespondingPosition(1), handmodel->Joints[18].CorrespondingPosition(2));
+		glEnd();
+
+
+		glLineWidth(5);
+		glColor3f(1.0, 1.0, 0.0);
+		glBegin(GL_LINES);
+		glVertex3f(handmodel->Joints[18].CorrespondingPosition(0), handmodel->Joints[18].CorrespondingPosition(1), handmodel->Joints[18].CorrespondingPosition(2));
+		glVertex3f(handmodel->Joints[19].CorrespondingPosition(0), handmodel->Joints[19].CorrespondingPosition(1), handmodel->Joints[19].CorrespondingPosition(2));
+		glEnd();
+
+		glLineWidth(5);
+		glColor3f(1.0, 1.0, 0.0);
+		glBegin(GL_LINES);
+		glVertex3f(handmodel->Joints[19].CorrespondingPosition(0), handmodel->Joints[19].CorrespondingPosition(1), handmodel->Joints[19].CorrespondingPosition(2));
+		glVertex3f(handmodel->Joints[20].CorrespondingPosition(0), handmodel->Joints[20].CorrespondingPosition(1), handmodel->Joints[20].CorrespondingPosition(2));
+		glEnd();
+
+		glLineWidth(5);
+		glColor3f(1.0, 1.0, 0.0);
+		glBegin(GL_LINES);
+		glVertex3f(handmodel->Joints[20].CorrespondingPosition(0), handmodel->Joints[20].CorrespondingPosition(1), handmodel->Joints[20].CorrespondingPosition(2));
+		glVertex3f(handmodel->Joints[21].CorrespondingPosition(0), handmodel->Joints[21].CorrespondingPosition(1), handmodel->Joints[21].CorrespondingPosition(2));
+		glEnd();
 	}
 }
 void draw_Visible_vertex()
@@ -389,14 +538,21 @@ void draw() {
 	gluLookAt(x + control.gx, y + control.gy, z + control.gz, control.gx, control.gy, control.gz, 0.0, 1.0, 0.0);//个人理解最开始是看向-z的，之后的角度是在global中心上叠加的，所以要加
 
 
-	if (show_mesh)  draw_Mesh();
-	else draw_WireHand();
+	if (!show_skeleton)
+	{
+		if (show_mesh)  draw_Mesh();
+		else draw_WireHand();
+	}
+	else
+	{
+		draw_skeleton();
+	}
 
-	//draw_skeleton();
 	draw_CloudPoint();
 	if (with_Kinect)  draw_Cooresponding_connection();
 	draw_Global_Coordinate();
-	draw_Visible_vertex();
+
+	//draw_Visible_vertex();
 	//draw_Collision();
 	//show_Collision();
 
@@ -473,13 +629,17 @@ void idle() {
 			handmodel->Updata(handmodel->Params);
 		}
 
-
+		handmodel->Params[0] = 0;
+		handmodel->Params[1] = 0;
+		handmodel->Params[2] = 0;
 		memcpy((float*)pBuf_out, handmodel->Params, sizeof(float) * 26);
 		//MixShowResult(handmodel->Generate_handimg(), handfinder.sensor_hand_silhouette);
 
 		itr = 0;
 		handmodel->Solved = false;
 	}
+
+	cout << handmodel->Params[0] << "   " << handmodel->Params[1] << "   " << handmodel->Params[2] << endl;
 	ends_clock = clock();
 	//cout << "Running Time : " << (double)(ends_clock - start)*1000 / CLK_TCK << endl;
 
