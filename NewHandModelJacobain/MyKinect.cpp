@@ -356,7 +356,7 @@ void myKinect::run2()
 					+ pow(p.Y - nearestRightHandPosition.Y, 2)
 					+ pow(p.Z - nearestRightHandPosition.Z, 2));
 
-				if (distance <0.135)
+				if (distance <0.13)
 				{
 					indicator[NUM_indicator++] = i;
 					m_middepth8u.at<uchar>(row_, col_) = 255;
@@ -398,11 +398,11 @@ void myKinect::run2()
 			distanceTransform(m_middepth8u, dist_image, CV_DIST_L2, 3);
 			int temp = 0, R = 0, cx = 0, cy = 0;
 
-			int search_area_min_col = depthSpaceRightHandPosition.X - 40 > 0 ? depthSpaceRightHandPosition.X - 40 : 0;
-			int search_area_max_col = depthSpaceRightHandPosition.X + 40 > 512 ? 512 : depthSpaceRightHandPosition.X + 40;
+			int search_area_min_col = depthSpaceRightHandPosition.X - 50 > 0 ? depthSpaceRightHandPosition.X - 50 : 0;
+			int search_area_max_col = depthSpaceRightHandPosition.X + 50 > 512 ? 512 : depthSpaceRightHandPosition.X + 50;
 
-			int search_area_min_row = depthSpaceRightHandPosition.Y - 40 > 0 ? depthSpaceRightHandPosition.Y - 40 : 0;
-			int search_area_max_row = depthSpaceRightHandPosition.Y + 40 > 424 ? 424 : depthSpaceRightHandPosition.Y + 40;
+			int search_area_min_row = depthSpaceRightHandPosition.Y - 50 > 0 ? depthSpaceRightHandPosition.Y - 50 : 0;
+			int search_area_max_row = depthSpaceRightHandPosition.Y + 50 > 424 ? 424 : depthSpaceRightHandPosition.Y + 50;
 
 			for (int row = search_area_min_row; row < search_area_max_row; row++)
 			{
@@ -446,7 +446,7 @@ void myKinect::run2()
 				int row_ = indicator[i] / 512;  // y
 				int col_ = indicator[i] % 512;   //x
 
-				Point2f o = cv::Point2i(cx, cy) + Point(eigen_vecs[0].x*1.2f*R, eigen_vecs[0].y*1.2f*R);
+				Point2f o = cv::Point2i(cx, cy) + Point(eigen_vecs[0].x*1.3f*R, eigen_vecs[0].y*1.3f*R);
 				Vector2f p0(eigen_vecs[0].x, eigen_vecs[0].y);
 				Vector2f p;
 				p.x() = col_ - o.x; p.y() = row_ - o.y;
@@ -462,8 +462,10 @@ void myKinect::run2()
 			distance_transform.exec(m_middepth8u.data, 125);
 			std::copy(distance_transform.idxs_image_ptr(), distance_transform.idxs_image_ptr() + 424 * 512, idx_image_buffer_BACK_BUFFER);
 
+			cv::Point2i new_circle_center(cx,424-1-cy);
 
 			NUM_indicator = 0;
+			NUM_palm_indicator = 0;
 			int count = 0;
 			for (int i = 0; i < 424 * 512; ++i)
 			{
@@ -475,13 +477,21 @@ void myKinect::run2()
 					if (m_middepth8u.at<uchar>(row_, col_) == 255)
 					{
 						indicator[NUM_indicator++] = i;
+
+						float distance_to_palm = sqrt((new_circle_center.x - col_)*(new_circle_center.x - col_)
+						+ (new_circle_center.y - row_)*(new_circle_center.y - row_));
+
+						if (distance_to_palm < R)
+						{
+							palm_indicator[NUM_palm_indicator++] = i;
+						}
 					}
 				}
 
 				count++;
 			}
 
-			pointcloud->DepthMatToPointCloud(depth_image[BACK_BUFFER], indicator, NUM_indicator);
+			pointcloud->DepthMatToPointCloud(depth_image[BACK_BUFFER], indicator, NUM_indicator, palm_indicator, NUM_palm_indicator);
 			pointcloud->Filter_visible_cloud();
 			pointcloud->downSample();
 

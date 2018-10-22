@@ -32,7 +32,7 @@ public:
 	~PointCloud() {}
 
 	void DepthMatToPointCloud(cv::Mat& depth, HandFinder* hanfinder);
-	void DepthMatToPointCloud(cv::Mat& depth, int *indicator, int NUM_indicator);
+	void DepthMatToPointCloud(cv::Mat& depth, int *indicator, int NUM_indicator, int *palm_indicator, int NUM_palm_indicator);
 	
 	void Filter_visible_cloud();
 

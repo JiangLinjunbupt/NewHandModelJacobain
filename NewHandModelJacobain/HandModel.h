@@ -137,6 +137,7 @@ public:
 	//show img 
 	cv::Mat Generate_handimg();
 	cv::Mat outputImage;
+	std::queue<Eigen::Matrix<float, 22, 3>> temporal_position;
 private:
 
 	//jacobain related
@@ -149,7 +150,6 @@ private:
 	void Updata_Jacobian_correspond(std::vector<int> & cor);
 	Eigen::MatrixXf Compute_one_Vertex_Jacobain(int index);
 
-	std::queue<Eigen::Matrix<float,22,3>> temporal_position;
 
 private:
 	void load_faces(char* file);
@@ -172,6 +172,8 @@ private:
 
 	//jacobain related
 	MatrixXf Compute_joint_Limited(Eigen::VectorXf & e_limit, bool has_glove);
+
+	MatrixXf Compute_joint_Limited2(Eigen::VectorXf & e_limit, bool has_glove);
 
 	MatrixXf Compute_Silhouette_Limited(Eigen::VectorXf & e_limit,int *idx_img);
 

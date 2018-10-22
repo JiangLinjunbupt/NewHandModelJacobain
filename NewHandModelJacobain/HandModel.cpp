@@ -403,7 +403,6 @@ HandModel::HandModel(Camera *camera_):camera(camera_)
 	//       1      ------>    整体变宽
 	//       2      ------>    整体变厚
 	Hand_scale << 0.9f, 0.9f, 0.9f;
-
 	//Jacobain related 
 	Joints_jacobian = Eigen::MatrixXf::Zero(NumofJoints * 3, NumberofParams);
 	Solved = false;
@@ -1232,7 +1231,7 @@ void HandModel::MoveToDownSampleCorrespondingVertices(int itr,pcl::PointCloud<pc
 	//joint Limited
 	int omiga_joint_limited = 50;
 	Eigen::VectorXf e_limit;
-	Eigen::MatrixXf J_limit = Compute_joint_Limited(e_limit,has_glove);
+	Eigen::MatrixXf J_limit = Compute_joint_Limited2(e_limit,has_glove);
 
 	//collision Limied
 	int omiga_collision = 50;
@@ -1420,6 +1419,448 @@ MatrixXf HandModel::Compute_joint_Limited(Eigen::VectorXf & e_limit, bool has_gl
 
 	return J_limit;
 }
+
+MatrixXf HandModel::Compute_joint_Limited2(Eigen::VectorXf & e_limit, bool has_glove)
+{
+	MatrixXf J_limit = MatrixXf::Zero(26, 26);
+
+	e_limit = Eigen::VectorXf::Zero(26, 1);
+
+	//thumb
+	{
+		//       6       ------>    Thumb_Low_R_y
+		//       7       ------>    Thumb_Low_R_z
+		//       8       ------>    Thumb_mid_R_y    //这里注意了，是z不是y了
+		//       9       ------>    Thumb_top_R_y    //这里注意了，是z不是y了
+		{
+			int i = 8;
+			float q_max = (init_Params[i] + 10) > ParamsUpperBound[i] ? ParamsUpperBound[i] : (init_Params[i] + 10);
+			float q_min = (init_Params[i] - 10) < ParamsLowerBound[i] ? ParamsLowerBound[i] : (init_Params[i] - 10);
+			if (Params[i] > q_max) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_max - Params[i]) - std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else if (Params[i] < q_min) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_min - Params[i]) + std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else {
+				J_limit(i, i) = 0;
+				e_limit(i) = 0;
+			}
+		}
+
+		{
+			int i = 9;
+			float q_max = (init_Params[i] + 20) > ParamsUpperBound[i] ? ParamsUpperBound[i] : (init_Params[i] + 20);
+			float q_min = (init_Params[i] - 20) < ParamsLowerBound[i] ? ParamsLowerBound[i] : (init_Params[i] - 20);
+			if (Params[i] > q_max) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_max - Params[i]) - std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else if (Params[i] < q_min) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_min - Params[i]) + std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else {
+				J_limit(i, i) = 0;
+				e_limit(i) = 0;
+			}
+		}
+	}
+
+	//index
+	{	//       10      ------>    Index_Low_R_y
+		//       11      ------>    Index_Low_R_z
+		//       12      ------>    Index_mid_R_y
+		//       13      ------>    Index_top_R_y
+		{
+			int i = 10;
+			float q_max = (init_Params[i] + 10) > ParamsUpperBound[i] ? ParamsUpperBound[i] : (init_Params[i] + 10);
+			float q_min = (init_Params[i] - 10) < ParamsLowerBound[i] ? ParamsLowerBound[i] : (init_Params[i] - 10);
+			if (Params[i] > q_max) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_max - Params[i]) - std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else if (Params[i] < q_min) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_min - Params[i]) + std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else {
+				J_limit(i, i) = 0;
+				e_limit(i) = 0;
+			}
+		}
+
+		{
+			int i = 11;
+			float q_max, q_min;
+			if (Params[i - 1] < 60)
+			{
+				q_max = ParamsUpperBound[i];
+				q_min = ParamsLowerBound[i];
+			}
+			else
+			{
+				q_max = q_min = 0;
+			}
+
+			if (Params[i] > q_max) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_max - Params[i]) - std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else if (Params[i] < q_min) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_min - Params[i]) + std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else {
+				J_limit(i, i) = 0;
+				e_limit(i) = 0;
+			}
+		}
+
+		{
+			int i = 12;
+			float q_max = (init_Params[i] + 20) > ParamsUpperBound[i] ? ParamsUpperBound[i] : (init_Params[i] + 20);
+			float q_min = (init_Params[i] - 20) < ParamsLowerBound[i] ? ParamsLowerBound[i] : (init_Params[i] - 20);
+			if (Params[i] > q_max) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_max - Params[i]) - std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else if (Params[i] < q_min) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_min - Params[i]) + std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else {
+				J_limit(i, i) = 0;
+				e_limit(i) = 0;
+			}
+		}
+
+		{
+			int i = 13;
+			float q_max = (Params[i - 1] + 20) > ParamsUpperBound[i] ? ParamsUpperBound[i] : (Params[i - 1] + 20);
+			float q_min = Params[i - 1] * 0.4f;
+			if (Params[i] > q_max) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_max - Params[i]) - std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else if (Params[i] < q_min) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_min - Params[i]) + std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else {
+				J_limit(i, i) = 0;
+				e_limit(i) = 0;
+			}
+		}
+	}
+
+	//middle
+	{	    //       14      ------>    Middle_Low_R_y
+			//       15      ------>    Middle_Low_R_z
+			//       16      ------>    Middle_mid_R_y
+			//       17      ------>    Middle_top_R_y
+		{
+			int i = 14;
+			float q_max = (init_Params[i] + 10) > ParamsUpperBound[i] ? ParamsUpperBound[i] : (init_Params[i] + 10);
+			float q_min = (init_Params[i] - 10) < ParamsLowerBound[i] ? ParamsLowerBound[i] : (init_Params[i] - 10);
+			if (Params[i] > q_max) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_max - Params[i]) - std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else if (Params[i] < q_min) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_min - Params[i]) + std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else {
+				J_limit(i, i) = 0;
+				e_limit(i) = 0;
+			}
+		}
+
+		{
+			int i = 15;
+			float q_max, q_min;
+			if (Params[i - 1] < 60)
+			{
+				q_max = ParamsUpperBound[i];
+				q_min = ParamsLowerBound[i];
+			}
+			else
+			{
+				q_max = q_min = 0;
+			}
+
+			if (Params[i] > q_max) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_max - Params[i]) - std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else if (Params[i] < q_min) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_min - Params[i]) + std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else {
+				J_limit(i, i) = 0;
+				e_limit(i) = 0;
+			}
+		}
+
+		{
+			int i = 16;
+			float q_max = (init_Params[i] + 20) > ParamsUpperBound[i] ? ParamsUpperBound[i] : (init_Params[i] + 20);
+			float q_min = (init_Params[i] - 20) < ParamsLowerBound[i] ? ParamsLowerBound[i] : (init_Params[i] - 20);
+			if (Params[i] > q_max) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_max - Params[i]) - std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else if (Params[i] < q_min) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_min - Params[i]) + std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else {
+				J_limit(i, i) = 0;
+				e_limit(i) = 0;
+			}
+		}
+
+		{
+			int i = 17;
+			float q_max = (Params[i - 1] + 20) > ParamsUpperBound[i] ? ParamsUpperBound[i] : (Params[i - 1] + 20);
+			float q_min = Params[i - 1] * 0.4f;
+			if (Params[i] > q_max) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_max - Params[i]) - std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else if (Params[i] < q_min) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_min - Params[i]) + std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else {
+				J_limit(i, i) = 0;
+				e_limit(i) = 0;
+			}
+		}
+	}
+
+	//ring
+	{	    
+
+		//       18      ------>    Ring_Low_R_y
+		//       19      ------>    Ring_Low_R_z
+		//       20      ------>    Ring_mid_R_y
+		//       21      ------>    Ring_top_R_y
+		{
+			int i = 18;
+			float q_max = (init_Params[i] + 10) > ParamsUpperBound[i] ? ParamsUpperBound[i] : (init_Params[i] + 10);
+			float q_min = (init_Params[i] - 10) < ParamsLowerBound[i] ? ParamsLowerBound[i] : (init_Params[i] - 10);
+			if (Params[i] > q_max) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_max - Params[i]) - std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else if (Params[i] < q_min) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_min - Params[i]) + std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else {
+				J_limit(i, i) = 0;
+				e_limit(i) = 0;
+			}
+		}
+
+		{
+			int i = 19;
+			float q_max, q_min;
+			if (Params[i - 1] < 60)
+			{
+				q_max = ParamsUpperBound[i];
+				q_min = ParamsLowerBound[i];
+			}
+			else
+			{
+				q_max = q_min = 0;
+			}
+
+			if (Params[i] > q_max) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_max - Params[i]) - std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else if (Params[i] < q_min) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_min - Params[i]) + std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else {
+				J_limit(i, i) = 0;
+				e_limit(i) = 0;
+			}
+		}
+
+		{
+			int i = 20;
+			float q_max = (init_Params[i] + 20) > ParamsUpperBound[i] ? ParamsUpperBound[i] : (init_Params[i] + 20);
+			float q_min = (init_Params[i] - 20) < ParamsLowerBound[i] ? ParamsLowerBound[i] : (init_Params[i] - 20);
+			if (Params[i] > q_max) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_max - Params[i]) - std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else if (Params[i] < q_min) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_min - Params[i]) + std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else {
+				J_limit(i, i) = 0;
+				e_limit(i) = 0;
+			}
+		}
+
+		{
+			int i = 21;
+			float q_max = (Params[i - 1] + 20) > ParamsUpperBound[i] ? ParamsUpperBound[i] : (Params[i - 1] + 20);
+			float q_min = Params[i - 1] * 0.4f;
+			if (Params[i] > q_max) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_max - Params[i]) - std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else if (Params[i] < q_min) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_min - Params[i]) + std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else {
+				J_limit(i, i) = 0;
+				e_limit(i) = 0;
+			}
+		}
+	}
+
+	//pinkey
+	{
+
+		//       22      ------>    Pinkey_Low_R_y
+		//       23      ------>    Pinkey_Low_R_z
+		//       24      ------>    Pinkey_mid_R_y
+		//       25      ------>    Pinkey_top_R_y
+		{
+			int i = 22;
+			float q_max = (init_Params[i] + 10) > ParamsUpperBound[i] ? ParamsUpperBound[i] : (init_Params[i] + 10);
+			float q_min = (init_Params[i] - 10) < ParamsLowerBound[i] ? ParamsLowerBound[i] : (init_Params[i] - 10);
+			if (Params[i] > q_max) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_max - Params[i]) - std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else if (Params[i] < q_min) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_min - Params[i]) + std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else {
+				J_limit(i, i) = 0;
+				e_limit(i) = 0;
+			}
+		}
+
+		{
+			int i = 23;
+			float q_max, q_min;
+			if (Params[i - 1] < 60)
+			{
+				q_max = ParamsUpperBound[i];
+				q_min = ParamsLowerBound[i];
+			}
+			else
+			{
+				q_max = q_min = 0;
+			}
+
+			if (Params[i] > q_max) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_max - Params[i]) - std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else if (Params[i] < q_min) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_min - Params[i]) + std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else {
+				J_limit(i, i) = 0;
+				e_limit(i) = 0;
+			}
+		}
+
+		{
+			int i = 24;
+			float q_max = (init_Params[i] + 20) > ParamsUpperBound[i] ? ParamsUpperBound[i] : (init_Params[i] + 20);
+			float q_min = (init_Params[i] - 20) < ParamsLowerBound[i] ? ParamsLowerBound[i] : (init_Params[i] - 20);
+			if (Params[i] > q_max) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_max - Params[i]) - std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else if (Params[i] < q_min) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_min - Params[i]) + std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else {
+				J_limit(i, i) = 0;
+				e_limit(i) = 0;
+			}
+		}
+
+		{
+			int i = 25;
+			float q_max = (Params[i - 1] + 20) > ParamsUpperBound[i] ? ParamsUpperBound[i] : (Params[i - 1] + 20);
+			float q_min = Params[i - 1] * 0.4f;
+			if (Params[i] > q_max) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_max - Params[i]) - std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else if (Params[i] < q_min) {
+				//cout << "i = " << i << ", theta = " << theta_0[i] << endl;
+				e_limit(i) = (q_min - Params[i]) + std::numeric_limits<float>::epsilon();
+				J_limit(i, i) = 1;
+			}
+			else {
+				J_limit(i, i) = 0;
+				e_limit(i) = 0;
+			}
+		}
+	}
+
+
+	return J_limit;
+}
+
 
 MatrixXf HandModel::Compute_Silhouette_Limited(Eigen::VectorXf & e_sil,int *idx_img)
 {

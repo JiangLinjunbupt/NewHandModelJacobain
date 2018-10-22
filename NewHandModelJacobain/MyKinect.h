@@ -62,6 +62,8 @@ private:
 	int indicator[cDepthWidth*cDepthHeight];
 	int NUM_indicator;
 
+	int palm_indicator[cDepthWidth*cDepthHeight];
+	int NUM_palm_indicator;
 public:
 	HandFinder * handfinder;
 	PointCloud * pointcloud;

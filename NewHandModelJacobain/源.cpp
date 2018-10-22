@@ -87,18 +87,25 @@ void find_correspondences(std::vector<int> & correspondences_out)
 	}
 	else
 	{
-		correspondences_out.resize(pointcloud.pointcloud_downsample.points.size());
-
-		pcl::KdTreeFLANN<pcl::PointXYZ> search_kdtree;
-		search_kdtree.setInputCloud(Handmodel_visible_cloud);
-
-		const int k = 1;
-		std::vector<int> k_indices(k);
-		std::vector<float> k_squared_distances(k);
-		for (int i = 0; i < pointcloud.pointcloud_downsample.points.size(); ++i)
+		if (pointcloud.pointcloud_downsample.points.size() > 2)
 		{
-			search_kdtree.nearestKSearch(pointcloud.pointcloud_downsample, i, k, k_indices, k_squared_distances);
-			correspondences_out[i] = k_indices[0];
+			correspondences_out.resize(pointcloud.pointcloud_downsample.points.size());
+
+			pcl::KdTreeFLANN<pcl::PointXYZ> search_kdtree;
+			search_kdtree.setInputCloud(Handmodel_visible_cloud);
+
+			const int k = 1;
+			std::vector<int> k_indices(k);
+			std::vector<float> k_squared_distances(k);
+			for (int i = 0; i < pointcloud.pointcloud_downsample.points.size(); ++i)
+			{
+				search_kdtree.nearestKSearch(pointcloud.pointcloud_downsample, i, k, k_indices, k_squared_distances);
+				correspondences_out[i] = k_indices[0];
+			}
+		}
+		else
+		{
+			cerr << "pointcloud_downsample equel to zero !!!!  please cheak if some thing wrong ? " << endl;
 		}
 	}
 }
@@ -605,7 +612,14 @@ void idle() {
 			handmodel->init_Params[1] = pointcloud.PointCloud_center_y;
 			handmodel->init_Params[2] = pointcloud.PointCloud_center_z;
 
-			judge_initParams();
+			if (with_Kinect)
+			{
+				judge_initParams();
+			}
+			else
+			{
+				for (int i = 0; i < 26; i++)  handmodel->Params[i] = handmodel->init_Params[i];
+			}
 			handmodel->Updata(handmodel->Params);
 
 		}
@@ -628,14 +642,22 @@ void idle() {
 
 			handmodel->Updata(handmodel->Params);
 		}
+		else
+		{
+			for (int i = 0; i < handmodel->NumberofParams; ++i) handmodel->previous_Params[i] = 0;
+
+			//reset temporal information
+			int temporal_size = handmodel->temporal_position.size();
+			for (int i = 0; i < temporal_size; ++i) handmodel->temporal_position.pop();
+		}
 
 		memcpy((float*)pBuf_out, handmodel->Params, sizeof(float) * 26);
-		//MixShowResult(handmodel->Generate_handimg(), handfinder.sensor_hand_silhouette);
+		MixShowResult(handmodel->Generate_handimg(), handfinder.sensor_hand_silhouette);
 
 		itr = 0;
 		handmodel->Solved = false;
 	}
-
+	//cout << handmodel->Params[0] << "  " << handmodel->Params[1] << "  " << handmodel->Params[2] << endl;
 	ends_clock = clock();
 	//cout << "Running Time : " << (double)(ends_clock - start)*1000 / CLK_TCK << endl;
 
@@ -781,6 +803,11 @@ int main(int argc, char** argv)
 
 void MixShowResult(cv::Mat input1, cv::Mat input2)
 {
+
+	//inpute2是输入的深度图
+	//inpute1是生成的
+	cv::flip(input2, input2, 0);
+
 	int height = input2.rows;
 	int width = input2.cols;
 	cv::Mat colored_input1 = cv::Mat::zeros(height, width, CV_8UC3);
@@ -792,16 +819,16 @@ void MixShowResult(cv::Mat input1, cv::Mat input2)
 		{
 			if (input1.at<uchar>(i, j) != 0)
 			{
-				colored_input1.at < cv::Vec3b>(i, j)[0] = 0;
-				colored_input1.at < cv::Vec3b>(i, j)[1] = 0;
-				colored_input1.at < cv::Vec3b>(i, j)[2] = 255;
+				colored_input1.at < cv::Vec3b>(height - 1 - i, j)[0] = 0;
+				colored_input1.at < cv::Vec3b>(height - 1 - i, j)[1] = 0;
+				colored_input1.at < cv::Vec3b>(height - 1 - i, j)[2] = 255;
 			}
 			else
 			{
 
-				colored_input1.at < cv::Vec3b>(i, j)[0] = 255;
-				colored_input1.at < cv::Vec3b>(i, j)[1] = 255;
-				colored_input1.at < cv::Vec3b>(i, j)[2] = 255;
+				colored_input1.at < cv::Vec3b>(height - 1 - i, j)[0] = 255;
+				colored_input1.at < cv::Vec3b>(height - 1 - i, j)[1] = 255;
+				colored_input1.at < cv::Vec3b>(height - 1 - i, j)[2] = 255;
 
 			}
 
