@@ -62,12 +62,11 @@ int itr = 0;
 
 void load_handmodel_visible_cloud(pcl::PointCloud<pcl::PointXYZ>& cloud, HandModel &hm)
 {
-	cloud.points.clear();
-	if (hm.Visible_vertices.size() == 0)
-	{
-		cerr << "hand model have no Visible_vertices!!!!  please cheak if some thing wrong ? " << endl;
-	}
-	else
+	int NumVisible_vertiecs = hm.Visible_vertices.size();
+
+	cloud.points.resize(NumVisible_vertiecs);
+
+	if (hm.Visible_vertices.size() > 0)
 	{
 		for (int i = 0; i < hm.Visible_vertices.size(); i++)
 		{
@@ -75,39 +74,61 @@ void load_handmodel_visible_cloud(pcl::PointCloud<pcl::PointXYZ>& cloud, HandMod
 			p.x = hm.Visible_vertices[i](0);
 			p.y = hm.Visible_vertices[i](1);
 			p.z = hm.Visible_vertices[i](2);
-			cloud.points.push_back(p);
+			cloud.points[i] = p;
 		}
+	}
+	else
+	{
+		cerr << "hand model have no Visible_vertices!!!!  please cheak if some thing wrong ? " << endl;
 	}
 }
 void find_correspondences(std::vector<int> & correspondences_out)
 {
-	if (Handmodel_visible_cloud->points.size() == 0)
-	{
-		cerr << "hand model have no Visible_vertices!!!!  please cheak if some thing wrong ? " << endl;
-	}
-	else
-	{
-		if (pointcloud.pointcloud_downsample.points.size() > 2)
-		{
-			correspondences_out.resize(pointcloud.pointcloud_downsample.points.size());
 
-			pcl::KdTreeFLANN<pcl::PointXYZ> search_kdtree;
-			search_kdtree.setInputCloud(Handmodel_visible_cloud);
+	int NumVisible_ = Handmodel_visible_cloud->points.size();
+	int NumDownSample = pointcloud.pointcloud_downsample.points.size();
 
-			const int k = 1;
-			std::vector<int> k_indices(k);
-			std::vector<float> k_squared_distances(k);
-			for (int i = 0; i < pointcloud.pointcloud_downsample.points.size(); ++i)
-			{
-				search_kdtree.nearestKSearch(pointcloud.pointcloud_downsample, i, k, k_indices, k_squared_distances);
-				correspondences_out[i] = k_indices[0];
-			}
-		}
-		else
+	if (NumVisible_ > 0 && NumDownSample > 0)
+	{
+		correspondences_out.resize(NumDownSample);
+		pcl::KdTreeFLANN<pcl::PointXYZ> search_kdtree;
+		search_kdtree.setInputCloud(Handmodel_visible_cloud);
+
+		const int k = 1;
+		std::vector<int> k_indices(k);
+		std::vector<float> k_squared_distances(k);
+		for (int i = 0; i < pointcloud.pointcloud_downsample.points.size(); ++i)
 		{
-			cerr << "pointcloud_downsample equel to zero !!!!  please cheak if some thing wrong ? " << endl;
+			search_kdtree.nearestKSearch(pointcloud.pointcloud_downsample, i, k, k_indices, k_squared_distances);
+			correspondences_out[i] = k_indices[0];
 		}
 	}
+
+	//if (Handmodel_visible_cloud->points.size() == 0)
+	//{
+	//	cerr << "hand model have no Visible_vertices!!!!  please cheak if some thing wrong ? " << endl;
+	//}
+	//else
+	//{
+	//	if (pointcloud.pointcloud_downsample.points.size() > 2)
+	//	{
+	//		correspondences_out.resize(pointcloud.pointcloud_downsample.points.size());
+	//		pcl::KdTreeFLANN<pcl::PointXYZ> search_kdtree;
+	//		search_kdtree.setInputCloud(Handmodel_visible_cloud);
+	//		const int k = 1;
+	//		std::vector<int> k_indices(k);
+	//		std::vector<float> k_squared_distances(k);
+	//		for (int i = 0; i < pointcloud.pointcloud_downsample.points.size(); ++i)
+	//		{
+	//			search_kdtree.nearestKSearch(pointcloud.pointcloud_downsample, i, k, k_indices, k_squared_distances);
+	//			correspondences_out[i] = k_indices[0];
+	//		}
+	//	}
+	//	else
+	//	{
+	//		cerr << "pointcloud_downsample equel to zero !!!!  please cheak if some thing wrong ? " << endl;
+	//	}
+	//}
 }
 
 void MixShowResult(cv::Mat input1, cv::Mat input2);
@@ -123,7 +144,7 @@ float Comput_e(float* params);
 /* executed when a regular key is pressed */
 void keyboardDown(unsigned char key, int x, int y) {
 	switch (key) {
-	case  27:   // ESC
+	case  'q':   // ESC
 		exit(0);
 	case 'b':
 		with_Kinect = !with_Kinect;
@@ -614,6 +635,7 @@ void idle() {
 
 			if (with_Kinect)
 			{
+
 				judge_initParams();
 			}
 			else
@@ -652,7 +674,7 @@ void idle() {
 		}
 
 		memcpy((float*)pBuf_out, handmodel->Params, sizeof(float) * 26);
-		MixShowResult(handmodel->Generate_handimg(), handfinder.sensor_hand_silhouette);
+	    MixShowResult(handmodel->Generate_handimg(), handfinder.sensor_hand_silhouette);
 
 		itr = 0;
 		handmodel->Solved = false;
@@ -872,12 +894,11 @@ void judge_initParams()
 
 	float e_merge, e_glove , e_previous = 0;
 
-	e_glove = Comput_e(handmodel->init_Params);
-	e_merge = Comput_e(merge_Params);
-	e_previous = Comput_e(handmodel->previous_Params);
-
 	if (handmodel->previous_Params[2] != 0)
 	{
+		e_glove = Comput_e(handmodel->init_Params);
+		e_merge = Comput_e(merge_Params);
+		e_previous = Comput_e(handmodel->previous_Params);
 		/*e_merge = Comput_e(merge_Params);
 		e_previous = Comput_e(handmodel->previous_Params);
 */
@@ -899,7 +920,6 @@ void judge_initParams()
 			//cout << "using previous Params  :  " << e_previous << endl;
 		}
 	}
-
 
 	for (int i = 0; i < 26; i++)
 	{

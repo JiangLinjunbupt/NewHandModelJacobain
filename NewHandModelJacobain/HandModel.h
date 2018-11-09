@@ -5,6 +5,8 @@
 #include<vector>
 #include"Camera.h"
 #include "opencv2/core/core.hpp"    
+#include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/highgui/highgui.hpp"
 #include <pcl/point_types.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/kdtree/kdtree_flann.h>
@@ -99,6 +101,7 @@ public:
 
 
 	Matrix_Nx3 Joint_matrix;  //这里是将joint*数组中的关节点位置整合到一个矩阵中
+	Matrix_Nx2 Joint_matrix_2d;
 	Matrix_Nx3 Target_vertices;
 
 

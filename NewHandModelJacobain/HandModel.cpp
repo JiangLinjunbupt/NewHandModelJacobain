@@ -93,6 +93,7 @@ HandModel::HandModel(Camera *camera_):camera(camera_)
 {
 	NumofJoints = 22;
 	Joint_matrix = Eigen::MatrixXf::Zero(NumofJoints, 3);
+	Joint_matrix_2d = Eigen::MatrixXf::Zero(NumofJoints, 2);
 
 	Joints = new Joint_handmodel[22];
 	//wrist
@@ -636,6 +637,19 @@ void HandModel::Updata_Joints()
 		Joint_matrix(i, 1) = Joints[i].CorrespondingPosition(1);
 		Joint_matrix(i, 2) = Joints[i].CorrespondingPosition(2);
 	}
+
+	Joint_matrix_2d.setZero();
+	for (int i = 0; i < NumofJoints; ++i)
+	{
+		Eigen::Vector3f visible_v(Joint_matrix(i, 0), Joint_matrix(i, 1), Joint_matrix(i, 2));
+
+		Eigen::Vector2i joint_2D;
+		joint_2D << (int)(camera->world_to_depth_image(visible_v)(0)), (int)(camera->world_to_depth_image(visible_v)(1));
+
+		Joint_matrix_2d(i, 0) = joint_2D(0);
+		Joint_matrix_2d(i, 1) = joint_2D(1);
+	}
+	
 }
 
 void HandModel::Updata_axis()
@@ -806,6 +820,7 @@ void HandModel::Compute_normal_And_visibel_vertices()
 
 		}
 	}
+
 
 	for (int i = 0; i < Vertices_normal.rows(); ++i)
 	{
@@ -1182,11 +1197,11 @@ void HandModel::MoveToDownSampleCorrespondingVertices(int itr,pcl::PointCloud<pc
 		}
 
 		float e_final = e_3D + e_2D;
-		cout << " final e is : " << e_final << endl
-			<< "---------------¡· e_3D  is : " << e.norm() << endl
-			<< "---------------¡· e_2D  is : " << e_sil.norm() << endl;
-		show_initParams();
-		show_Params();
+		//cout << " final e is : " << e_final << endl
+		//	<< "---------------¡· e_3D  is : " << e.norm() << endl
+		//	<< "---------------¡· e_2D  is : " << e_sil.norm() << endl;
+		//show_initParams();
+		//show_Params();
 
 		if (e_final < 4000)
 		{
@@ -2645,6 +2660,7 @@ cv::Mat HandModel::Generate_handimg()
 			(Visible_vertices_2D[i](0) <=512-1) && 
 			(Visible_vertices_2D[i](1) >= 0)&& 
 			(Visible_vertices_2D[i](1) <=424-1) )
+
 			pointer[Visible_vertices_2D[i](1)*512 + Visible_vertices_2D[i](0)] = 255;
 	}
 

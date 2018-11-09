@@ -322,18 +322,23 @@ void myKinect::run2()
 
 					if (jointArray[JointType_Head].TrackingState == TrackingState_Tracked&&jointArray[JointType_HandRight].TrackingState == TrackingState_Tracked)
 					{
-						if (jointArray[JointType_Head].Position.Z < MinHead_Z)
+						if (jointArray[JointType_Head].Position.X > -0.15f && jointArray[JointType_Head].Position.X < 0.3f)
 						{
-							MinHead_Z = jointArray[JointType_Head].Position.Z;
-							nearestBodyindex = i;
-							nearestRightHandPosition = jointArray[JointType_HandRight].Position;
-							nearestRightElbowPosition = jointArray[JointType_ElbowRight].Position;
+							if (jointArray[JointType_Head].Position.Z < MinHead_Z)
+							{
+								MinHead_Z = jointArray[JointType_Head].Position.Z;
+								nearestBodyindex = i;
+								nearestRightHandPosition = jointArray[JointType_HandRight].Position;
+								nearestRightElbowPosition = jointArray[JointType_ElbowRight].Position;
+							}
 						}
 					}
 				}
 
 
 			}
+
+			
 			myMapper->MapCameraPointToDepthSpace(nearestRightElbowPosition, &depthSpaceElbowPosition);
 			myMapper->MapCameraPointToDepthSpace(nearestRightHandPosition, &depthSpaceRightHandPosition);
 		}

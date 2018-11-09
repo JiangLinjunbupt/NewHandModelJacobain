@@ -90,6 +90,17 @@ void PointCloud::DepthMatToPointCloud(cv::Mat& depth, int *indicator, int NUM_in
 		this->PointCloud_center_y = this->PointCloud_center_y / (float)(NUM_palm_indicator);
 		this->PointCloud_center_z = this->PointCloud_center_z / (float)(NUM_palm_indicator);
 	}
+
+	if (this->PointCloud_center_x > 10000) this->PointCloud_center_x = 10000;
+	if (this->PointCloud_center_x < -10000) this->PointCloud_center_x = -10000;
+
+	if (this->PointCloud_center_y > 10000) this->PointCloud_center_y = 10000;
+	if (this->PointCloud_center_y < -10000) this->PointCloud_center_y = -10000;
+
+	if (this->PointCloud_center_z > 10000) this->PointCloud_center_z = 10000;
+	if (this->PointCloud_center_z < -10000) this->PointCloud_center_z = -10000;
+
+
 }
 
 void PointCloud::Filter_visible_cloud()
