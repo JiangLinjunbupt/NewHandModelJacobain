@@ -703,7 +703,7 @@ void initGL(int width, int height) {
 
 void run_glove()
 {
-	system("D:\\Github_project\\SharedMemeryServer\\Debug\\SharedMemeryServer.exe");
+	system("F:\\SharedMemeryServer\\Debug\\SharedMemeryServer.exe");
 }
 
 int main(int argc, char** argv)
@@ -906,14 +906,14 @@ void judge_initParams()
 			<< "==============>> " << e_merge << endl
 			<< "====================>> " << e_previous << endl;*/
 
-		if (e_merge <= e_previous && e_merge <= e_glove)
+		if (e_merge <= e_previous && e_merge <= 0.66*e_glove)
 		{
 			for (int i = 0; i < 26; ++i) handmodel->Params[i] = merge_Params[i];
 			return;
 			//cout << "using merge Params  :  " << e_merge << endl;
 		}
 
-		if (e_previous < e_merge && e_previous < e_glove)
+		if (e_previous < e_merge && e_previous < 0.66*e_glove)
 		{
 			for (int i = 0; i < 26; ++i) handmodel->Params[i] = handmodel->previous_Params[i];
 			return;

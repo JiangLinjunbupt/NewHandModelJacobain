@@ -101,7 +101,7 @@ public:
 
 
 	Matrix_Nx3 Joint_matrix;  //这里是将joint*数组中的关节点位置整合到一个矩阵中
-	Matrix_Nx2 Joint_matrix_2d;
+	vector<Eigen::Vector2i> Visible_joints_2D;
 	Matrix_Nx3 Target_vertices;
 
 

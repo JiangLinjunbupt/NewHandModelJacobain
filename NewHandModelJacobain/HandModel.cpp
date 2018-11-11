@@ -93,7 +93,6 @@ HandModel::HandModel(Camera *camera_):camera(camera_)
 {
 	NumofJoints = 22;
 	Joint_matrix = Eigen::MatrixXf::Zero(NumofJoints, 3);
-	Joint_matrix_2d = Eigen::MatrixXf::Zero(NumofJoints, 2);
 
 	Joints = new Joint_handmodel[22];
 	//wrist
@@ -638,7 +637,7 @@ void HandModel::Updata_Joints()
 		Joint_matrix(i, 2) = Joints[i].CorrespondingPosition(2);
 	}
 
-	Joint_matrix_2d.setZero();
+	Visible_joints_2D.clear();
 	for (int i = 0; i < NumofJoints; ++i)
 	{
 		Eigen::Vector3f visible_v(Joint_matrix(i, 0), Joint_matrix(i, 1), Joint_matrix(i, 2));
@@ -646,8 +645,7 @@ void HandModel::Updata_Joints()
 		Eigen::Vector2i joint_2D;
 		joint_2D << (int)(camera->world_to_depth_image(visible_v)(0)), (int)(camera->world_to_depth_image(visible_v)(1));
 
-		Joint_matrix_2d(i, 0) = joint_2D(0);
-		Joint_matrix_2d(i, 1) = joint_2D(1);
+		Visible_joints_2D.push_back(joint_2D);
 	}
 	
 }
@@ -2652,17 +2650,331 @@ Eigen::MatrixXf HandModel::Compute_Collision_Limit(Eigen::VectorXf& e_limit)
 cv::Mat HandModel::Generate_handimg()
 {
 	outputImage.setTo(0);
-	uchar * pointer = outputImage.data;
-	//cout << "size" << Visible_vertices_2D.size() << endl;
-	for (int i = 0; i < Visible_vertices_2D.size(); i++)
-	{
-		if((Visible_vertices_2D[i](0)>=0) && 
-			(Visible_vertices_2D[i](0) <=512-1) && 
-			(Visible_vertices_2D[i](1) >= 0)&& 
-			(Visible_vertices_2D[i](1) <=424-1) )
 
-			pointer[Visible_vertices_2D[i](1)*512 + Visible_vertices_2D[i](0)] = 255;
+	for (int i = 0; i < NumofJoints; ++i)
+	{
+		if ((Visible_joints_2D[i](0) >= 0) &&
+			(Visible_joints_2D[i](0) <= 512 - 1) &&
+			(Visible_joints_2D[i](1) >= 0) &&
+			(Visible_joints_2D[i](1) <= 424 - 1))
+		{
+			cv::circle(outputImage,cv::Point2i(Visible_joints_2D[i](0), Visible_joints_2D[i](1)), 3, cv::Scalar(255), -1);
+		}
+
 	}
+
+
+	{
+
+		if( ((Visible_joints_2D[0](0) >= 0) &&
+			(Visible_joints_2D[0](0) <= 512 - 1) &&
+			(Visible_joints_2D[0](1) >= 0) &&
+			(Visible_joints_2D[0](1) <= 424 - 1))&&
+			((Visible_joints_2D[2](0) >= 0) &&
+			(Visible_joints_2D[2](0) <= 512 - 1) &&
+				(Visible_joints_2D[2](1) >= 0) &&
+				(Visible_joints_2D[2](1) <= 424 - 1)))
+		{
+			cv::line(outputImage, cv::Point2i(Visible_joints_2D[0](0), Visible_joints_2D[0](1)),
+				cv::Point2i(Visible_joints_2D[2](0), Visible_joints_2D[2](1)),
+				cv::Scalar(255), 1);
+		}
+
+		if (((Visible_joints_2D[0](0) >= 0) &&
+			(Visible_joints_2D[0](0) <= 512 - 1) &&
+			(Visible_joints_2D[0](1) >= 0) &&
+			(Visible_joints_2D[0](1) <= 424 - 1)) &&
+			((Visible_joints_2D[6](0) >= 0) &&
+			(Visible_joints_2D[6](0) <= 512 - 1) &&
+				(Visible_joints_2D[6](1) >= 0) &&
+				(Visible_joints_2D[6](1) <= 424 - 1)))
+		{
+			cv::line(outputImage, cv::Point2i(Visible_joints_2D[0](0), Visible_joints_2D[0](1)),
+				cv::Point2i(Visible_joints_2D[6](0), Visible_joints_2D[6](1)),
+				cv::Scalar(255), 1);
+		}
+
+		if (((Visible_joints_2D[0](0) >= 0) &&
+			(Visible_joints_2D[0](0) <= 512 - 1) &&
+			(Visible_joints_2D[0](1) >= 0) &&
+			(Visible_joints_2D[0](1) <= 424 - 1)) &&
+			((Visible_joints_2D[10](0) >= 0) &&
+			(Visible_joints_2D[10](0) <= 512 - 1) &&
+				(Visible_joints_2D[10](1) >= 0) &&
+				(Visible_joints_2D[10](1) <= 424 - 1)))
+		{
+			cv::line(outputImage, cv::Point2i(Visible_joints_2D[0](0), Visible_joints_2D[0](1)),
+				cv::Point2i(Visible_joints_2D[10](0), Visible_joints_2D[10](1)),
+				cv::Scalar(255), 1);
+		}
+
+		if (((Visible_joints_2D[0](0) >= 0) &&
+			(Visible_joints_2D[0](0) <= 512 - 1) &&
+			(Visible_joints_2D[0](1) >= 0) &&
+			(Visible_joints_2D[0](1) <= 424 - 1)) &&
+			((Visible_joints_2D[14](0) >= 0) &&
+			(Visible_joints_2D[14](0) <= 512 - 1) &&
+				(Visible_joints_2D[14](1) >= 0) &&
+				(Visible_joints_2D[14](1) <= 424 - 1)))
+		{
+			cv::line(outputImage, cv::Point2i(Visible_joints_2D[0](0), Visible_joints_2D[0](1)),
+				cv::Point2i(Visible_joints_2D[14](0), Visible_joints_2D[14](1)),
+				cv::Scalar(255), 1);
+		}
+
+		if (((Visible_joints_2D[0](0) >= 0) &&
+			(Visible_joints_2D[0](0) <= 512 - 1) &&
+			(Visible_joints_2D[0](1) >= 0) &&
+			(Visible_joints_2D[0](1) <= 424 - 1)) &&
+			((Visible_joints_2D[18](0) >= 0) &&
+			(Visible_joints_2D[18](0) <= 512 - 1) &&
+				(Visible_joints_2D[18](1) >= 0) &&
+				(Visible_joints_2D[18](1) <= 424 - 1)))
+		{
+			cv::line(outputImage, cv::Point2i(Visible_joints_2D[0](0), Visible_joints_2D[0](1)),
+				cv::Point2i(Visible_joints_2D[18](0), Visible_joints_2D[18](1)),
+				cv::Scalar(255), 1);
+		}
+
+	}
+
+
+
+	{
+		int i = 2;
+		if (((Visible_joints_2D[i](0) >= 0) &&
+			(Visible_joints_2D[i](0) <= 512 - 1) &&
+			(Visible_joints_2D[i](1) >= 0) &&
+			(Visible_joints_2D[i](1) <= 424 - 1)) &&
+			((Visible_joints_2D[i+1](0) >= 0) &&
+			(Visible_joints_2D[i + 1](0) <= 512 - 1) &&
+				(Visible_joints_2D[i + 1](1) >= 0) &&
+				(Visible_joints_2D[i + 1](1) <= 424 - 1)))
+		{
+			cv::line(outputImage, cv::Point2i(Visible_joints_2D[i](0), Visible_joints_2D[i](1)),
+				cv::Point2i(Visible_joints_2D[i+1](0), Visible_joints_2D[i + 1](1)),
+				cv::Scalar(255), 1);
+		}
+
+		if (((Visible_joints_2D[i +1](0) >= 0) &&
+			(Visible_joints_2D[i + 1](0) <= 512 - 1) &&
+			(Visible_joints_2D[i + 1](1) >= 0) &&
+			(Visible_joints_2D[i + 1](1) <= 424 - 1)) &&
+			((Visible_joints_2D[i + 2](0) >= 0) &&
+			(Visible_joints_2D[i + 2](0) <= 512 - 1) &&
+				(Visible_joints_2D[i + 2](1) >= 0) &&
+				(Visible_joints_2D[i + 2](1) <= 424 - 1)))
+		{
+			cv::line(outputImage, cv::Point2i(Visible_joints_2D[i + 1](0), Visible_joints_2D[i + 1](1)),
+				cv::Point2i(Visible_joints_2D[i + 2](0), Visible_joints_2D[i + 2](1)),
+				cv::Scalar(255), 1);
+		}
+
+		if (((Visible_joints_2D[i + 2](0) >= 0) &&
+			(Visible_joints_2D[i + 2](0) <= 512 - 1) &&
+			(Visible_joints_2D[i + 2](1) >= 0) &&
+			(Visible_joints_2D[i + 2](1) <= 424 - 1)) &&
+			((Visible_joints_2D[i + 3](0) >= 0) &&
+			(Visible_joints_2D[i + 3](0) <= 512 - 1) &&
+				(Visible_joints_2D[i + 3](1) >= 0) &&
+				(Visible_joints_2D[i + 3](1) <= 424 - 1)))
+		{
+			cv::line(outputImage, cv::Point2i(Visible_joints_2D[i + 2](0), Visible_joints_2D[i + 2](1)),
+				cv::Point2i(Visible_joints_2D[i + 3](0), Visible_joints_2D[i + 3](1)),
+				cv::Scalar(255), 1);
+		}
+	}
+
+	{
+		int i = 6;
+		if (((Visible_joints_2D[i](0) >= 0) &&
+			(Visible_joints_2D[i](0) <= 512 - 1) &&
+			(Visible_joints_2D[i](1) >= 0) &&
+			(Visible_joints_2D[i](1) <= 424 - 1)) &&
+			((Visible_joints_2D[i + 1](0) >= 0) &&
+			(Visible_joints_2D[i + 1](0) <= 512 - 1) &&
+				(Visible_joints_2D[i + 1](1) >= 0) &&
+				(Visible_joints_2D[i + 1](1) <= 424 - 1)))
+		{
+			cv::line(outputImage, cv::Point2i(Visible_joints_2D[i](0), Visible_joints_2D[i](1)),
+				cv::Point2i(Visible_joints_2D[i + 1](0), Visible_joints_2D[i + 1](1)),
+				cv::Scalar(255), 1);
+		}
+
+		if (((Visible_joints_2D[i + 1](0) >= 0) &&
+			(Visible_joints_2D[i + 1](0) <= 512 - 1) &&
+			(Visible_joints_2D[i + 1](1) >= 0) &&
+			(Visible_joints_2D[i + 1](1) <= 424 - 1)) &&
+			((Visible_joints_2D[i + 2](0) >= 0) &&
+			(Visible_joints_2D[i + 2](0) <= 512 - 1) &&
+				(Visible_joints_2D[i + 2](1) >= 0) &&
+				(Visible_joints_2D[i + 2](1) <= 424 - 1)))
+		{
+			cv::line(outputImage, cv::Point2i(Visible_joints_2D[i + 1](0), Visible_joints_2D[i + 1](1)),
+				cv::Point2i(Visible_joints_2D[i + 2](0), Visible_joints_2D[i + 2](1)),
+				cv::Scalar(255), 1);
+		}
+
+		if (((Visible_joints_2D[i + 2](0) >= 0) &&
+			(Visible_joints_2D[i + 2](0) <= 512 - 1) &&
+			(Visible_joints_2D[i + 2](1) >= 0) &&
+			(Visible_joints_2D[i + 2](1) <= 424 - 1)) &&
+			((Visible_joints_2D[i + 3](0) >= 0) &&
+			(Visible_joints_2D[i + 3](0) <= 512 - 1) &&
+				(Visible_joints_2D[i + 3](1) >= 0) &&
+				(Visible_joints_2D[i + 3](1) <= 424 - 1)))
+		{
+			cv::line(outputImage, cv::Point2i(Visible_joints_2D[i + 2](0), Visible_joints_2D[i + 2](1)),
+				cv::Point2i(Visible_joints_2D[i + 3](0), Visible_joints_2D[i + 3](1)),
+				cv::Scalar(255), 1);
+		}
+	}
+
+	{
+		int i = 10;
+		if (((Visible_joints_2D[i](0) >= 0) &&
+			(Visible_joints_2D[i](0) <= 512 - 1) &&
+			(Visible_joints_2D[i](1) >= 0) &&
+			(Visible_joints_2D[i](1) <= 424 - 1)) &&
+			((Visible_joints_2D[i + 1](0) >= 0) &&
+			(Visible_joints_2D[i + 1](0) <= 512 - 1) &&
+				(Visible_joints_2D[i + 1](1) >= 0) &&
+				(Visible_joints_2D[i + 1](1) <= 424 - 1)))
+		{
+			cv::line(outputImage, cv::Point2i(Visible_joints_2D[i](0), Visible_joints_2D[i](1)),
+				cv::Point2i(Visible_joints_2D[i + 1](0), Visible_joints_2D[i + 1](1)),
+				cv::Scalar(255), 1);
+		}
+
+		if (((Visible_joints_2D[i + 1](0) >= 0) &&
+			(Visible_joints_2D[i + 1](0) <= 512 - 1) &&
+			(Visible_joints_2D[i + 1](1) >= 0) &&
+			(Visible_joints_2D[i + 1](1) <= 424 - 1)) &&
+			((Visible_joints_2D[i + 2](0) >= 0) &&
+			(Visible_joints_2D[i + 2](0) <= 512 - 1) &&
+				(Visible_joints_2D[i + 2](1) >= 0) &&
+				(Visible_joints_2D[i + 2](1) <= 424 - 1)))
+		{
+			cv::line(outputImage, cv::Point2i(Visible_joints_2D[i + 1](0), Visible_joints_2D[i + 1](1)),
+				cv::Point2i(Visible_joints_2D[i + 2](0), Visible_joints_2D[i + 2](1)),
+				cv::Scalar(255), 1);
+		}
+
+		if (((Visible_joints_2D[i + 2](0) >= 0) &&
+			(Visible_joints_2D[i + 2](0) <= 512 - 1) &&
+			(Visible_joints_2D[i + 2](1) >= 0) &&
+			(Visible_joints_2D[i + 2](1) <= 424 - 1)) &&
+			((Visible_joints_2D[i + 3](0) >= 0) &&
+			(Visible_joints_2D[i + 3](0) <= 512 - 1) &&
+				(Visible_joints_2D[i + 3](1) >= 0) &&
+				(Visible_joints_2D[i + 3](1) <= 424 - 1)))
+		{
+			cv::line(outputImage, cv::Point2i(Visible_joints_2D[i + 2](0), Visible_joints_2D[i + 2](1)),
+				cv::Point2i(Visible_joints_2D[i + 3](0), Visible_joints_2D[i + 3](1)),
+				cv::Scalar(255), 1);
+		}
+	}
+
+	{
+		int i = 14;
+		if (((Visible_joints_2D[i](0) >= 0) &&
+			(Visible_joints_2D[i](0) <= 512 - 1) &&
+			(Visible_joints_2D[i](1) >= 0) &&
+			(Visible_joints_2D[i](1) <= 424 - 1)) &&
+			((Visible_joints_2D[i + 1](0) >= 0) &&
+			(Visible_joints_2D[i + 1](0) <= 512 - 1) &&
+				(Visible_joints_2D[i + 1](1) >= 0) &&
+				(Visible_joints_2D[i + 1](1) <= 424 - 1)))
+		{
+			cv::line(outputImage, cv::Point2i(Visible_joints_2D[i](0), Visible_joints_2D[i](1)),
+				cv::Point2i(Visible_joints_2D[i + 1](0), Visible_joints_2D[i + 1](1)),
+				cv::Scalar(255), 1);
+		}
+
+		if (((Visible_joints_2D[i + 1](0) >= 0) &&
+			(Visible_joints_2D[i + 1](0) <= 512 - 1) &&
+			(Visible_joints_2D[i + 1](1) >= 0) &&
+			(Visible_joints_2D[i + 1](1) <= 424 - 1)) &&
+			((Visible_joints_2D[i + 2](0) >= 0) &&
+			(Visible_joints_2D[i + 2](0) <= 512 - 1) &&
+				(Visible_joints_2D[i + 2](1) >= 0) &&
+				(Visible_joints_2D[i + 2](1) <= 424 - 1)))
+		{
+			cv::line(outputImage, cv::Point2i(Visible_joints_2D[i + 1](0), Visible_joints_2D[i + 1](1)),
+				cv::Point2i(Visible_joints_2D[i + 2](0), Visible_joints_2D[i + 2](1)),
+				cv::Scalar(255), 1);
+		}
+
+		if (((Visible_joints_2D[i + 2](0) >= 0) &&
+			(Visible_joints_2D[i + 2](0) <= 512 - 1) &&
+			(Visible_joints_2D[i + 2](1) >= 0) &&
+			(Visible_joints_2D[i + 2](1) <= 424 - 1)) &&
+			((Visible_joints_2D[i + 3](0) >= 0) &&
+			(Visible_joints_2D[i + 3](0) <= 512 - 1) &&
+				(Visible_joints_2D[i + 3](1) >= 0) &&
+				(Visible_joints_2D[i + 3](1) <= 424 - 1)))
+		{
+			cv::line(outputImage, cv::Point2i(Visible_joints_2D[i + 2](0), Visible_joints_2D[i + 2](1)),
+				cv::Point2i(Visible_joints_2D[i + 3](0), Visible_joints_2D[i + 3](1)),
+				cv::Scalar(255), 1);
+		}
+	}
+
+	{
+		int i = 18;
+		if (((Visible_joints_2D[i](0) >= 0) &&
+			(Visible_joints_2D[i](0) <= 512 - 1) &&
+			(Visible_joints_2D[i](1) >= 0) &&
+			(Visible_joints_2D[i](1) <= 424 - 1)) &&
+			((Visible_joints_2D[i + 1](0) >= 0) &&
+			(Visible_joints_2D[i + 1](0) <= 512 - 1) &&
+				(Visible_joints_2D[i + 1](1) >= 0) &&
+				(Visible_joints_2D[i + 1](1) <= 424 - 1)))
+		{
+			cv::line(outputImage, cv::Point2i(Visible_joints_2D[i](0), Visible_joints_2D[i](1)),
+				cv::Point2i(Visible_joints_2D[i + 1](0), Visible_joints_2D[i + 1](1)),
+				cv::Scalar(255), 1);
+		}
+
+		if (((Visible_joints_2D[i + 1](0) >= 0) &&
+			(Visible_joints_2D[i + 1](0) <= 512 - 1) &&
+			(Visible_joints_2D[i + 1](1) >= 0) &&
+			(Visible_joints_2D[i + 1](1) <= 424 - 1)) &&
+			((Visible_joints_2D[i + 2](0) >= 0) &&
+			(Visible_joints_2D[i + 2](0) <= 512 - 1) &&
+				(Visible_joints_2D[i + 2](1) >= 0) &&
+				(Visible_joints_2D[i + 2](1) <= 424 - 1)))
+		{
+			cv::line(outputImage, cv::Point2i(Visible_joints_2D[i + 1](0), Visible_joints_2D[i + 1](1)),
+				cv::Point2i(Visible_joints_2D[i + 2](0), Visible_joints_2D[i + 2](1)),
+				cv::Scalar(255), 1);
+		}
+
+		if (((Visible_joints_2D[i + 2](0) >= 0) &&
+			(Visible_joints_2D[i + 2](0) <= 512 - 1) &&
+			(Visible_joints_2D[i + 2](1) >= 0) &&
+			(Visible_joints_2D[i + 2](1) <= 424 - 1)) &&
+			((Visible_joints_2D[i + 3](0) >= 0) &&
+			(Visible_joints_2D[i + 3](0) <= 512 - 1) &&
+				(Visible_joints_2D[i + 3](1) >= 0) &&
+				(Visible_joints_2D[i + 3](1) <= 424 - 1)))
+		{
+			cv::line(outputImage, cv::Point2i(Visible_joints_2D[i + 2](0), Visible_joints_2D[i + 2](1)),
+				cv::Point2i(Visible_joints_2D[i + 3](0), Visible_joints_2D[i + 3](1)),
+				cv::Scalar(255), 1);
+		}
+	}
+	//uchar * pointer = outputImage.data;
+	////cout << "size" << Visible_vertices_2D.size() << endl;
+	//for (int i = 0; i < Visible_vertices_2D.size(); i++)
+	//{
+	//	if((Visible_vertices_2D[i](0)>=0) && 
+	//		(Visible_vertices_2D[i](0) <=512-1) && 
+	//		(Visible_vertices_2D[i](1) >= 0)&& 
+	//		(Visible_vertices_2D[i](1) <=424-1) )
+
+	//		pointer[Visible_vertices_2D[i](1)*512 + Visible_vertices_2D[i](0)] = 255;
+	//}
 
 	return outputImage;
 }

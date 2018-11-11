@@ -124,7 +124,7 @@ HRESULT myKinect::InitializeDefaultSensor()
 	}
 
 
-	sensor_thread = std::thread(&myKinect::run2, this);
+	sensor_thread = std::thread(&myKinect::run, this);
 	sensor_thread.detach();
 
 	return hr;
